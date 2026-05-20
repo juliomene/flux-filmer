@@ -5,10 +5,12 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { Loader2, Send, Settings2, Paperclip, Download, X } from "lucide-react";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { toast } from "sonner";
@@ -31,6 +33,55 @@ type Message = {
 type Provider = "kling" | "xai" | "sora" | "veo3";
 type Mode = "image" | "video";
 
+type OverlayCfg = {
+  enabled: boolean;
+  text: string;
+  position: "top" | "center" | "bottom";
+  color: string;
+  bg: string;
+  opacity: number; // 0..100
+};
+
+type ChatConfig = {
+  mode: Mode;
+  provider: Provider;
+  apiKey: string;
+  duration: number; // total seconds
+  perScene: 5 | 10;
+  aspect: "16:9" | "9:16" | "1:1";
+  audio: boolean;
+  overlay: OverlayCfg;
+};
+
+const DEFAULT_CFG: ChatConfig = {
+  mode: "image",
+  provider: "kling",
+  apiKey: "",
+  duration: 5,
+  perScene: 5,
+  aspect: "16:9",
+  audio: false,
+  overlay: {
+    enabled: false,
+    text: "",
+    position: "bottom",
+    color: "#ffffff",
+    bg: "#000000",
+    opacity: 50,
+  },
+};
+
+function loadCfg(): ChatConfig {
+  if (typeof window === "undefined") return DEFAULT_CFG;
+  try {
+    const raw = localStorage.getItem("chat_config");
+    if (!raw) return DEFAULT_CFG;
+    return { ...DEFAULT_CFG, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_CFG;
+  }
+}
+
 function ChatView() {
   const { id: conversationId } = Route.useParams();
   const qc = useQueryClient();
@@ -38,12 +89,27 @@ function ChatView() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [prompt, setPrompt] = useState("");
-  const [mode, setMode] = useState<Mode>("image");
-  const [provider, setProvider] = useState<Provider>("kling");
-  const [duration, setDuration] = useState(5);
-  const [aspect, setAspect] = useState<"16:9" | "9:16" | "1:1">("16:9");
+  const [cfg, setCfg] = useState<ChatConfig>(DEFAULT_CFG);
   const [attachedUrl, setAttachedUrl] = useState<string>("");
   const [showConfig, setShowConfig] = useState(false);
+
+  // Hydrate from localStorage on mount
+  useEffect(() => {
+    setCfg(loadCfg());
+  }, []);
+  // Persist on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem("chat_config", JSON.stringify(cfg));
+    } catch {
+      /* ignore */
+    }
+  }, [cfg]);
+
+  const { mode, provider, duration, aspect } = cfg;
+  const patch = (p: Partial<ChatConfig>) => setCfg((c) => ({ ...c, ...p }));
+  const patchOverlay = (p: Partial<OverlayCfg>) =>
+    setCfg((c) => ({ ...c, overlay: { ...c.overlay, ...p } }));
 
   // Hydrate config from conversation
   useQuery({
@@ -56,8 +122,7 @@ function ChatView() {
         .single();
       const row = data as { mode: Mode; provider: Provider } | null;
       if (row) {
-        setMode(row.mode);
-        setProvider(row.provider);
+        setCfg((c) => ({ ...c, mode: row.mode, provider: row.provider }));
       }
       return row;
     },
@@ -94,7 +159,7 @@ function ChatView() {
           prompt: vars.prompt,
           mode,
           provider,
-          durationSeconds: duration,
+          durationSeconds: cfg.perScene,
           aspectRatio: aspect,
           imageUrl: vars.imageUrl,
         },
@@ -115,16 +180,20 @@ function ChatView() {
 
   const list = messages.data ?? [];
   const lastIsUser = list[list.length - 1]?.role === "user";
+  const totalScenes = mode === "video" ? Math.max(1, Math.ceil(duration / cfg.perScene)) : 1;
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col">
       <header className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="text-sm font-medium">
           {mode === "video" ? "🎬 Vídeo" : "🖼️ Imagem"} · {provider}
+          {mode === "video" && totalScenes > 1 && (
+            <span className="ml-2 text-xs text-muted-foreground">
+              {totalScenes} cenas × {cfg.perScene}s = {duration}s
+            </span>
+          )}
         </h2>
-        <Button variant="ghost" size="sm" onClick={() => setShowConfig((s) => !s)}>
-          <Settings2 className="h-4 w-4" />
-        </Button>
+        <span className="text-xs text-muted-foreground">Config no botão ⚙️ abaixo</span>
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
@@ -147,66 +216,16 @@ function ChatView() {
         </div>
       </div>
 
-      {/* Config panel */}
-      {showConfig && (
-        <div className="border-t border-border bg-card/30 p-4">
-          <div className="mx-auto grid max-w-3xl grid-cols-2 gap-3 md:grid-cols-4">
-            <div>
-              <Label className="text-xs">Modo</Label>
-              <Select value={mode} onValueChange={(v) => setMode(v as Mode)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="image">Imagem</SelectItem>
-                  <SelectItem value="video">Vídeo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">Provedor</Label>
-              <Select value={provider} onValueChange={(v) => setProvider(v as Provider)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="kling">Kling</SelectItem>
-                  <SelectItem value="xai">xAI Grok</SelectItem>
-                  <SelectItem value="sora">OpenAI Sora</SelectItem>
-                  <SelectItem value="veo3">Google Veo 3</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {mode === "video" && (
-              <>
-                <div>
-                  <Label className="text-xs">Duração (s)</Label>
-                  <Select value={String(duration)} onValueChange={(v) => setDuration(Number(v))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">5</SelectItem>
-                      <SelectItem value="10">10</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs">Proporção</Label>
-                  <Select value={aspect} onValueChange={(v) => setAspect(v as typeof aspect)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="16:9">16:9</SelectItem>
-                      <SelectItem value="9:16">9:16</SelectItem>
-                      <SelectItem value="1:1">1:1</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
-          </div>
-          <p className="mx-auto mt-3 max-w-3xl text-[11px] text-muted-foreground">
-            Multi-cena (&gt;10s), áudio automático e overlay de texto em breve nesta tela.
-          </p>
-        </div>
-      )}
-
       {/* Input */}
-      <div className="border-t border-border bg-card/30 p-4 backdrop-blur">
+      <div className="relative border-t border-border bg-card/30 p-4 backdrop-blur">
+        {showConfig && (
+          <ConfigPanel
+            cfg={cfg}
+            patch={patch}
+            patchOverlay={patchOverlay}
+            onClose={() => setShowConfig(false)}
+          />
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -226,6 +245,17 @@ function ChatView() {
           )}
           <div className="flex items-end gap-2 rounded-xl border border-border bg-background p-2">
             <AttachImageButton onAttach={setAttachedUrl} />
+            <button
+              type="button"
+              onClick={() => setShowConfig((s) => !s)}
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                showConfig && "bg-accent text-foreground",
+              )}
+              aria-label="Configurações"
+            >
+              <Settings2 className="h-4 w-4" />
+            </button>
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -254,6 +284,213 @@ function ChatView() {
             </Button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function ConfigPanel({
+  cfg,
+  patch,
+  patchOverlay,
+  onClose,
+}: {
+  cfg: ChatConfig;
+  patch: (p: Partial<ChatConfig>) => void;
+  patchOverlay: (p: Partial<OverlayCfg>) => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    // delay to skip the click that opened the panel
+    const t = setTimeout(() => document.addEventListener("mousedown", onClick), 0);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      clearTimeout(t);
+      document.removeEventListener("mousedown", onClick);
+    };
+  }, [onClose]);
+
+  const Chip = ({
+    active,
+    onClick: oc,
+    children,
+  }: {
+    active: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+  }) => (
+    <button
+      type="button"
+      onClick={oc}
+      className={cn(
+        "rounded-md border px-3 py-1 text-xs transition",
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-background text-foreground hover:bg-accent",
+      )}
+    >
+      {children}
+    </button>
+  );
+
+  return (
+    <div
+      ref={ref}
+      className="absolute bottom-full left-1/2 z-30 mb-2 w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-xl"
+    >
+      <div className="space-y-4">
+        <div>
+          <Label className="text-xs">Modo</Label>
+          <div className="mt-1 flex gap-2">
+            <Chip active={cfg.mode === "image"} onClick={() => patch({ mode: "image" })}>
+              Imagem
+            </Chip>
+            <Chip active={cfg.mode === "video"} onClick={() => patch({ mode: "video" })}>
+              Vídeo
+            </Chip>
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-xs">Provedor</Label>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {(["xai", "kling", "sora", "veo3"] as Provider[]).map((p) => (
+              <Chip key={p} active={cfg.provider === p} onClick={() => patch({ provider: p })}>
+                {p === "xai" ? "xAI" : p === "kling" ? "Kling" : p === "sora" ? "Sora" : "Veo3"}
+              </Chip>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-xs">API Key (fal.ai)</Label>
+          <Input
+            value={cfg.apiKey}
+            onChange={(e) => patch({ apiKey: e.target.value })}
+            placeholder="fal_...."
+            type="password"
+            className="mt-1 h-8"
+          />
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            Salva apenas neste navegador. Servidor usa FAL_KEY global se vazio.
+          </p>
+        </div>
+
+        {cfg.mode === "video" && (
+          <>
+            <div>
+              <Label className="text-xs">Duração total</Label>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {[5, 10, 20, 30, 60, 90].map((d) => (
+                  <Chip key={d} active={cfg.duration === d} onClick={() => patch({ duration: d })}>
+                    {d}s
+                  </Chip>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Por cena</Label>
+              <div className="mt-1 flex gap-2">
+                {[5, 10].map((d) => (
+                  <Chip
+                    key={d}
+                    active={cfg.perScene === d}
+                    onClick={() => patch({ perScene: d as 5 | 10 })}
+                  >
+                    {d}s
+                  </Chip>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Proporção</Label>
+              <div className="mt-1 flex gap-2">
+                {(["16:9", "9:16", "1:1"] as const).map((a) => (
+                  <Chip key={a} active={cfg.aspect === a} onClick={() => patch({ aspect: a })}>
+                    {a}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Áudio IA</Label>
+              <Switch checked={cfg.audio} onCheckedChange={(v) => patch({ audio: v })} />
+            </div>
+          </>
+        )}
+
+        <div className="space-y-3 border-t border-border pt-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Overlay de texto</Label>
+            <Switch
+              checked={cfg.overlay.enabled}
+              onCheckedChange={(v) => patchOverlay({ enabled: v })}
+            />
+          </div>
+          {cfg.overlay.enabled && (
+            <>
+              <Input
+                value={cfg.overlay.text}
+                onChange={(e) => patchOverlay({ text: e.target.value })}
+                placeholder="Texto a sobrepor"
+                className="h-8"
+              />
+              <div>
+                <Label className="text-xs">Posição</Label>
+                <div className="mt-1 flex gap-2">
+                  {(["top", "center", "bottom"] as const).map((p) => (
+                    <Chip
+                      key={p}
+                      active={cfg.overlay.position === p}
+                      onClick={() => patchOverlay({ position: p })}
+                    >
+                      {p === "top" ? "Topo" : p === "center" ? "Centro" : "Base"}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Cor texto</Label>
+                  <input
+                    type="color"
+                    value={cfg.overlay.color}
+                    onChange={(e) => patchOverlay({ color: e.target.value })}
+                    className="mt-1 h-8 w-full rounded-md border border-border bg-background"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Cor fundo</Label>
+                  <input
+                    type="color"
+                    value={cfg.overlay.bg}
+                    onChange={(e) => patchOverlay({ bg: e.target.value })}
+                    className="mt-1 h-8 w-full rounded-md border border-border bg-background"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Opacidade do fundo: {cfg.overlay.opacity}%</Label>
+                <Slider
+                  value={[cfg.overlay.opacity]}
+                  min={0}
+                  max={100}
+                  step={5}
+                  onValueChange={([v]) => patchOverlay({ opacity: v })}
+                  className="mt-2"
+                />
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
