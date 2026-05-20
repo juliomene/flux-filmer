@@ -51,27 +51,36 @@ export type Database = {
       }
       generated_images: {
         Row: {
+          cost_usd: number
           created_at: string
+          error_message: string | null
           id: string
           image_url: string
           model: string
           prompt: string
+          status: string
           user_id: string
         }
         Insert: {
+          cost_usd?: number
           created_at?: string
+          error_message?: string | null
           id?: string
           image_url: string
           model?: string
           prompt: string
+          status?: string
           user_id: string
         }
         Update: {
+          cost_usd?: number
           created_at?: string
+          error_message?: string | null
           id?: string
           image_url?: string
           model?: string
           prompt?: string
+          status?: string
           user_id?: string
         }
         Relationships: []
@@ -83,6 +92,7 @@ export type Database = {
           credits: number
           display_name: string | null
           id: string
+          total_spent_usd: number
           updated_at: string
           user_id: string
         }
@@ -92,6 +102,7 @@ export type Database = {
           credits?: number
           display_name?: string | null
           id?: string
+          total_spent_usd?: number
           updated_at?: string
           user_id: string
         }
@@ -101,6 +112,7 @@ export type Database = {
           credits?: number
           display_name?: string | null
           id?: string
+          total_spent_usd?: number
           updated_at?: string
           user_id?: string
         }
@@ -108,8 +120,10 @@ export type Database = {
       }
       project_scenes: {
         Row: {
+          cost_usd: number
           created_at: string
           duration_s: number
+          fal_request_id: string | null
           id: string
           image_url: string | null
           project_id: string
@@ -120,8 +134,10 @@ export type Database = {
           video_clip_url: string | null
         }
         Insert: {
+          cost_usd?: number
           created_at?: string
           duration_s?: number
+          fal_request_id?: string | null
           id?: string
           image_url?: string | null
           project_id: string
@@ -132,8 +148,10 @@ export type Database = {
           video_clip_url?: string | null
         }
         Update: {
+          cost_usd?: number
           created_at?: string
           duration_s?: number
+          fal_request_id?: string | null
           id?: string
           image_url?: string | null
           project_id?: string
@@ -159,10 +177,12 @@ export type Database = {
           duration_s: number | null
           error_message: string | null
           id: string
+          num_scenes: number
           prompt: string
           status: Database["public"]["Enums"]["project_status"]
           thumbnail_url: string | null
           title: string
+          total_cost_usd: number
           updated_at: string
           user_id: string
           video_url: string | null
@@ -172,10 +192,12 @@ export type Database = {
           duration_s?: number | null
           error_message?: string | null
           id?: string
+          num_scenes?: number
           prompt: string
           status?: Database["public"]["Enums"]["project_status"]
           thumbnail_url?: string | null
           title?: string
+          total_cost_usd?: number
           updated_at?: string
           user_id: string
           video_url?: string | null
@@ -185,10 +207,12 @@ export type Database = {
           duration_s?: number | null
           error_message?: string | null
           id?: string
+          num_scenes?: number
           prompt?: string
           status?: Database["public"]["Enums"]["project_status"]
           thumbnail_url?: string | null
           title?: string
+          total_cost_usd?: number
           updated_at?: string
           user_id?: string
           video_url?: string | null

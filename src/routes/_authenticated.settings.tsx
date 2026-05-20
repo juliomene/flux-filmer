@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { formatUsd } from "@/lib/costs";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Configurações — VideoForge AI" }] }),
@@ -27,7 +28,7 @@ function SettingsPage() {
         <dl className="space-y-2 text-sm">
           <div className="flex justify-between"><dt className="text-muted-foreground">Nome</dt><dd>{data?.profile?.display_name ?? "—"}</dd></div>
           <div className="flex justify-between"><dt className="text-muted-foreground">E-mail</dt><dd>{data?.user?.email}</dd></div>
-          <div className="flex justify-between"><dt className="text-muted-foreground">Créditos</dt><dd className="font-semibold text-primary">{data?.profile?.credits ?? 0}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted-foreground">Gasto acumulado</dt><dd className="font-semibold text-primary">{formatUsd(data?.profile?.total_spent_usd)}</dd></div>
         </dl>
       </Card>
     </div>
