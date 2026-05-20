@@ -10,7 +10,7 @@ import { toast } from "sonner";
 const navItems = [
   { to: "/chat", label: "Chat IA", icon: MessageSquare },
   { to: "/images", label: "Imagens", icon: ImageIcon },
-  { to: "/videos", label: "Vídeos", icon: Film },
+  { to: "/create", label: "Criar Vídeo", icon: Film },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
