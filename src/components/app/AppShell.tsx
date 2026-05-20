@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Sparkles, LayoutDashboard, Wand2, Film, Image as ImageIcon, Settings, LogOut, Menu, Coins } from "lucide-react";
+import { Sparkles, LayoutDashboard, Wand2, Film, Image as ImageIcon, Settings, LogOut, Menu, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { formatUsd } from "@/lib/costs";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -60,7 +61,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
-      const { data } = await supabase.from("profiles").select("display_name, credits, avatar_url").eq("user_id", user.id).maybeSingle();
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name, total_spent_usd, avatar_url")
+        .eq("user_id", user.id)
+        .maybeSingle();
       return data;
     },
   });
@@ -105,9 +110,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="border-t border-sidebar-border p-3">
         <div className="mb-3 flex items-center justify-between rounded-lg bg-sidebar-accent/40 px-3 py-2 text-sm">
           <span className="flex items-center gap-2 text-sidebar-foreground/70">
-            <Coins className="h-4 w-4 text-primary" /> Créditos
+            <DollarSign className="h-4 w-4 text-primary" /> Gasto total
           </span>
-          <span className="font-semibold">{profile?.credits ?? "—"}</span>
+          <span className="font-semibold">{formatUsd(profile?.total_spent_usd)}</span>
         </div>
         <div className="mb-2 truncate px-2 text-xs text-sidebar-foreground/60">
           {profile?.display_name ?? "Carregando…"}
