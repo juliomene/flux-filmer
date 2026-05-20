@@ -63,13 +63,15 @@ function ImagesPage() {
       // Histórico (silencioso)
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        await supabase.from("generated_images").insert({
-          user_id: user?.id,
-          prompt,
-          image_url: url,
-          model: model.id,
-          provider: model.provider,
-        });
+        if (user) {
+          await supabase.from("generated_images").insert({
+            user_id: user.id,
+            prompt,
+            image_url: url,
+            model: model.id,
+            provider: model.provider,
+          });
+        }
       } catch { /* silencioso */ }
       return { url };
     },
