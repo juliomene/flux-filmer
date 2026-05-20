@@ -87,16 +87,16 @@ function ChatView() {
   }, [messages.data?.length]);
 
   const sendMut = useMutation({
-    mutationFn: () =>
+    mutationFn: (vars: { prompt: string; imageUrl?: string }) =>
       send({
         data: {
           conversationId,
-          prompt,
+          prompt: vars.prompt,
           mode,
           provider,
           durationSeconds: duration,
           aspectRatio: aspect,
-          imageUrl: attachedUrl || undefined,
+          imageUrl: vars.imageUrl,
         },
       }),
     onMutate: () => {
@@ -210,7 +210,8 @@ function ChatView() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (prompt.trim() && !sendMut.isPending) sendMut.mutate();
+          if (prompt.trim() && !sendMut.isPending)
+            sendMut.mutate({ prompt: prompt.trim(), imageUrl: attachedUrl || undefined });
           }}
           className="mx-auto max-w-3xl"
         >
@@ -231,7 +232,8 @@ function ChatView() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  if (prompt.trim() && !sendMut.isPending) sendMut.mutate();
+                  if (prompt.trim() && !sendMut.isPending)
+                    sendMut.mutate({ prompt: prompt.trim(), imageUrl: attachedUrl || undefined });
                 }
               }}
               placeholder={mode === "video" ? "Descreva o vídeo…" : "Descreva a imagem…"}
