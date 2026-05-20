@@ -28,7 +28,7 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard" });
+      if (data.session) navigate({ to: "/chat" });
     });
   }, [navigate]);
 
@@ -39,7 +39,7 @@ function AuthPage() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Bem-vindo de volta!");
-    navigate({ to: "/dashboard" });
+    navigate({ to: "/chat" });
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -49,14 +49,14 @@ function AuthPage() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: `${window.location.origin}/chat`,
         data: { display_name: displayName },
       },
     });
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Conta criada! Verifique seu e-mail se a confirmação estiver ativada.");
-    navigate({ to: "/dashboard" });
+    navigate({ to: "/chat" });
   };
 
   return (
