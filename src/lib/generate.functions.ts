@@ -12,7 +12,7 @@ export const generateImageFn = createServerFn({ method: "POST" })
       .object({
         provider: ProviderEnum,
         model: z.string().min(1).max(200),
-        apiKey: z.string().min(4).max(500),
+        apiKey: z.string().min(1).max(500),
         prompt: z.string().min(1).max(4000),
         inputImageUrl: z.string().url().optional(),
       })
@@ -53,7 +53,7 @@ export const startVideoFn = createServerFn({ method: "POST" })
       .object({
         provider: ProviderEnum,
         model: z.string().min(1).max(200),
-        apiKey: z.string().min(4).max(500),
+        apiKey: z.string().min(1).max(500),
         prompt: z.string().min(1).max(4000),
         inputImageUrl: z.string().url().optional(),
         durationSeconds: z.number().int().min(1).max(60).optional(),
@@ -86,7 +86,7 @@ export const pollVideoFn = createServerFn({ method: "POST" })
     z
       .object({
         jobId: z.string().uuid(),
-        apiKey: z.string().min(4).max(500),
+        apiKey: z.string().min(1).max(500),
       })
       .parse(input),
   )

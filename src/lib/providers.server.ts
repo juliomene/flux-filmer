@@ -51,7 +51,7 @@ export async function uploadBuffer(
 }
 
 function ensureKey(apiKey: string, provider: ProviderId) {
-  if (!apiKey || apiKey.length < 8) throw new Error(`Informe sua API key do provedor ${provider}.`);
+  if (!apiKey) throw new Error(`Informe sua API key do provedor ${provider}.`);
 }
 
 // ───────────── IMAGES ─────────────
@@ -64,8 +64,18 @@ export async function generateImage(
 
   switch (input.provider) {
     case "openai":
-    case "xai":
       return openAICompatibleImage(input, userId);
+    case "xai":
+      // xAI Grok roteia via fal.ai
+      return falImage(
+        {
+          ...input,
+          model: input.inputImageUrl
+            ? "fal-ai/xai/grok-imagine-image/edit"
+            : input.model || "fal-ai/xai/grok-imagine-image",
+        },
+        userId,
+      );
     case "google":
       return googleGeminiImage(input, userId);
     case "fal":
@@ -78,7 +88,7 @@ export async function generateImage(
 }
 
 async function openAICompatibleImage(input: GenerateImageInput, userId: string): Promise<ImageResult> {
-  const base = input.provider === "xai" ? "https://api.x.ai/v1" : "https://api.openai.com/v1";
+  const base = "https://api.openai.com/v1";
   let res: Response;
   if (input.inputImageUrl && input.provider === "openai") {
     // edit endpoint requires multipart
@@ -205,6 +215,7 @@ export async function startVideo(input: GenerateVideoStartInput): Promise<VideoS
     case "google":
       return startGoogleVeo(input);
     case "fal":
+    case "xai":
       return startFalVideo(input);
     case "replicate":
       return startReplicateVideo(input);
@@ -226,6 +237,7 @@ export async function pollVideo(
     case "google":
       return pollGoogleVeo(model, apiKey, externalId, userId);
     case "fal":
+    case "xai":
       return pollFalVideo(model, apiKey, externalId, userId);
     case "replicate":
       return pollReplicateVideo(apiKey, externalId, userId);
