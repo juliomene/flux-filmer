@@ -58,6 +58,7 @@ export type Database = {
           image_url: string
           model: string
           prompt: string
+          provider: string
           status: string
           user_id: string
         }
@@ -69,6 +70,7 @@ export type Database = {
           image_url: string
           model?: string
           prompt: string
+          provider?: string
           status?: string
           user_id: string
         }
@@ -80,8 +82,57 @@ export type Database = {
           image_url?: string
           model?: string
           prompt?: string
+          provider?: string
           status?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      generated_videos: {
+        Row: {
+          created_at: string
+          duration_s: number | null
+          error_message: string | null
+          external_id: string | null
+          id: string
+          model: string
+          prompt: string
+          provider: string
+          status: string
+          thumbnail_url: string | null
+          updated_at: string
+          user_id: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_s?: number | null
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          model: string
+          prompt: string
+          provider: string
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_s?: number | null
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          model?: string
+          prompt?: string
+          provider?: string
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id?: string
+          video_url?: string | null
         }
         Relationships: []
       }
