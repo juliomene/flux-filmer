@@ -54,9 +54,7 @@ export async function insertGeneratedImage(opts: {
   });
 }
 
-export async function updateScene(sceneId: string, patch: Record<string, unknown>) {
-  await supabaseAdmin.from("project_scenes").update(patch).eq("id", sceneId);
-}
+// (helper removed — callers use supabaseAdmin directly with typed updates)
 
 export async function generateScript(prompt: string, numScenes: number): Promise<Array<{ prompt: string }>> {
   const key = process.env.LOVABLE_API_KEY;
