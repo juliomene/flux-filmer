@@ -10,15 +10,16 @@ const PROVIDER_MODELS = {
     imageToVideo: "fal-ai/kling-video/v1.6/standard/image-to-video",
   },
   xai: {
-    image: "fal-ai/xai/grok-imagine-image",
-    imageEdit: "fal-ai/xai/grok-imagine-image/edit",
-    textToVideo: "fal-ai/xai/grok-imagine-video/text-to-video",
-    imageToVideo: "fal-ai/xai/grok-imagine-video/image-to-video",
+    image: "xai/grok-imagine-image",
+    imageEdit: "xai/grok-imagine-image/edit",
+    textToVideo: "xai/grok-imagine-video/text-to-video",
+    imageToVideo: "xai/grok-imagine-video/image-to-video",
   },
   sora: {
-    image: "fal-ai/gpt-image-1",
-    textToVideo: "fal-ai/sora/text-to-video",
-    imageToVideo: "fal-ai/sora/image-to-video",
+    image: "fal-ai/gpt-image-1/text-to-image",
+    imageEdit: "fal-ai/gpt-image-1/edit-image",
+    textToVideo: "fal-ai/sora",
+    imageToVideo: "fal-ai/sora",
   },
   veo3: {
     image: "fal-ai/imagen3",
@@ -134,15 +135,38 @@ export const sendChatMessage = createServerFn({ method: "POST" })
       let resultUrl: string;
 
       if (data.mode === "image") {
-        const model =
-          data.imageUrl && provider === "xai" && "imageEdit" in cfg
-            ? (cfg as { imageEdit: string }).imageEdit
-            : cfg.image;
-        const out = await falRun(model, {
-          prompt: data.prompt,
-          ...(data.imageUrl ? { image_url: data.imageUrl } : {}),
-          image_size: aspectToImageSize(data.aspectRatio),
-        });
+        let model: string;
+        let input: Record<string, unknown>;
+        if (provider === "xai") {
+          if (data.imageUrl) {
+            model = "xai/grok-imagine-image/edit";
+            input = { prompt: data.prompt, image_urls: [data.imageUrl], resolution: "1k" };
+          } else {
+            model = "xai/grok-imagine-image";
+            input = {
+              prompt: data.prompt,
+              aspect_ratio: data.aspectRatio,
+              resolution: "1k",
+              num_images: 1,
+            };
+          }
+        } else if (provider === "sora") {
+          if (data.imageUrl) {
+            model = "fal-ai/gpt-image-1/edit-image";
+            input = { prompt: data.prompt, image_url: data.imageUrl };
+          } else {
+            model = "fal-ai/gpt-image-1/text-to-image";
+            input = { prompt: data.prompt, image_size: aspectToImageSize(data.aspectRatio) };
+          }
+        } else {
+          model = cfg.image;
+          input = {
+            prompt: data.prompt,
+            ...(data.imageUrl ? { image_url: data.imageUrl } : {}),
+            image_size: aspectToImageSize(data.aspectRatio),
+          };
+        }
+        const out = await falRun(model, input);
         resultType = "image";
         resultUrl = extractImageUrl(out);
 
