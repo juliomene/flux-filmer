@@ -11,7 +11,7 @@ function IndexRedirect() {
   const navigate = useNavigate();
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      navigate({ to: data.session ? "/images" : "/auth", replace: true });
+      navigate({ to: data.session ? "/chat" : "/auth", replace: true });
     });
   }, [navigate]);
   return (
