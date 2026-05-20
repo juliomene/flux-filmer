@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { generateImage, startVideo, pollVideo } from "./providers.server";
 
 const ProviderEnum = z.enum(["openai", "google", "xai", "anthropic", "replicate", "fal"]);
@@ -20,10 +19,10 @@ export const generateImageFn = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { userId, supabase } = context;
     try {
       const out = await generateImage(data, userId);
-      await supabaseAdmin.from("generated_images").insert({
+      await supabase.from("generated_images").insert({
         user_id: userId,
         prompt: data.prompt,
         image_url: out.url,
@@ -34,7 +33,7 @@ export const generateImageFn = createServerFn({ method: "POST" })
       return { url: out.url };
     } catch (e) {
       const msg = (e as Error).message;
-      await supabaseAdmin.from("generated_images").insert({
+      await supabase.from("generated_images").insert({
         user_id: userId,
         prompt: data.prompt,
         image_url: "",
@@ -62,9 +61,9 @@ export const startVideoFn = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { userId, supabase } = context;
     const start = await startVideo(data);
-    const { data: row, error } = await supabaseAdmin
+    const { data: row, error } = await supabase
       .from("generated_videos")
       .insert({
         user_id: userId,
@@ -92,8 +91,8 @@ export const pollVideoFn = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
-    const { data: row, error } = await supabaseAdmin
+    const { userId, supabase } = context;
+    const { data: row, error } = await supabase
       .from("generated_videos")
       .select("*")
       .eq("id", data.jobId)
@@ -112,14 +111,14 @@ export const pollVideoFn = createServerFn({ method: "POST" })
       userId,
     );
     if (result.status === "ready") {
-      await supabaseAdmin
+      await supabase
         .from("generated_videos")
         .update({ status: "ready", video_url: result.url })
         .eq("id", row.id);
       return { status: "ready" as const, url: result.url };
     }
     if (result.status === "failed") {
-      await supabaseAdmin
+      await supabase
         .from("generated_videos")
         .update({ status: "failed", error_message: result.error })
         .eq("id", row.id);
