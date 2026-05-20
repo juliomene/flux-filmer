@@ -14,7 +14,187 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      credit_transactions: {
+        Row: {
+          created_at: string
+          delta: number
+          id: string
+          project_id: string | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          id?: string
+          project_id?: string | null
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          id?: string
+          project_id?: string | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generated_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          model: string
+          prompt: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          model?: string
+          prompt: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          model?: string
+          prompt?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          credits: number
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          credits?: number
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          credits?: number
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      project_scenes: {
+        Row: {
+          created_at: string
+          duration_s: number
+          id: string
+          image_url: string | null
+          project_id: string
+          prompt: string
+          scene_index: number
+          status: Database["public"]["Enums"]["scene_status"]
+          updated_at: string
+          video_clip_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_s?: number
+          id?: string
+          image_url?: string | null
+          project_id: string
+          prompt: string
+          scene_index: number
+          status?: Database["public"]["Enums"]["scene_status"]
+          updated_at?: string
+          video_clip_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_s?: number
+          id?: string
+          image_url?: string | null
+          project_id?: string
+          prompt?: string
+          scene_index?: number
+          status?: Database["public"]["Enums"]["scene_status"]
+          updated_at?: string
+          video_clip_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_scenes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string
+          duration_s: number | null
+          error_message: string | null
+          id: string
+          prompt: string
+          status: Database["public"]["Enums"]["project_status"]
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_s?: number | null
+          error_message?: string | null
+          id?: string
+          prompt: string
+          status?: Database["public"]["Enums"]["project_status"]
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_s?: number | null
+          error_message?: string | null
+          id?: string
+          prompt?: string
+          status?: Database["public"]["Enums"]["project_status"]
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +203,20 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      project_status:
+        | "draft"
+        | "generating_script"
+        | "generating_images"
+        | "generating_clips"
+        | "composing"
+        | "ready"
+        | "failed"
+      scene_status:
+        | "pending"
+        | "generating_image"
+        | "generating_clip"
+        | "ready"
+        | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +343,23 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      project_status: [
+        "draft",
+        "generating_script",
+        "generating_images",
+        "generating_clips",
+        "composing",
+        "ready",
+        "failed",
+      ],
+      scene_status: [
+        "pending",
+        "generating_image",
+        "generating_clip",
+        "ready",
+        "failed",
+      ],
+    },
   },
 } as const
