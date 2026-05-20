@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, MessageSquare, Trash2, Image as ImageIcon, Film, Search } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Film, Search } from "lucide-react";
 import { createConversation, deleteConversation } from "@/lib/chat.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
