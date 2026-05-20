@@ -14,6 +14,207 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          mode: string
+          provider: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mode?: string
+          provider?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mode?: string
+          provider?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          attachments: Json
+          content: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          result_type: string | null
+          result_url: string | null
+          result_urls: Json
+          role: string
+        }
+        Insert: {
+          attachments?: Json
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          result_type?: string | null
+          result_url?: string | null
+          result_urls?: Json
+          role: string
+        }
+        Update: {
+          attachments?: Json
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          result_type?: string | null
+          result_url?: string | null
+          result_urls?: Json
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_video_projects: {
+        Row: {
+          aspect_ratio: string | null
+          created_at: string
+          duration_seconds: number | null
+          error_message: string | null
+          has_audio: boolean | null
+          has_overlay: boolean | null
+          id: string
+          message_id: string | null
+          output_url: string | null
+          overlay_config: Json | null
+          provider: string
+          scenes_done: number
+          status: string
+          thumbnail_url: string | null
+          title: string
+          total_scenes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aspect_ratio?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          error_message?: string | null
+          has_audio?: boolean | null
+          has_overlay?: boolean | null
+          id?: string
+          message_id?: string | null
+          output_url?: string | null
+          overlay_config?: Json | null
+          provider?: string
+          scenes_done?: number
+          status?: string
+          thumbnail_url?: string | null
+          title?: string
+          total_scenes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aspect_ratio?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          error_message?: string | null
+          has_audio?: boolean | null
+          has_overlay?: boolean | null
+          id?: string
+          message_id?: string | null
+          output_url?: string | null
+          overlay_config?: Json | null
+          provider?: string
+          scenes_done?: number
+          status?: string
+          thumbnail_url?: string | null
+          title?: string
+          total_scenes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_video_projects_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_video_scenes: {
+        Row: {
+          clip_url: string | null
+          created_at: string
+          duration: number
+          error_msg: string | null
+          fal_req_id: string | null
+          id: string
+          image_url: string | null
+          overlay: Json | null
+          project_id: string
+          prompt: string
+          scene_index: number
+          status: string
+        }
+        Insert: {
+          clip_url?: string | null
+          created_at?: string
+          duration?: number
+          error_msg?: string | null
+          fal_req_id?: string | null
+          id?: string
+          image_url?: string | null
+          overlay?: Json | null
+          project_id: string
+          prompt: string
+          scene_index: number
+          status?: string
+        }
+        Update: {
+          clip_url?: string | null
+          created_at?: string
+          duration?: number
+          error_msg?: string | null
+          fal_req_id?: string | null
+          id?: string
+          image_url?: string | null
+          overlay?: Json | null
+          project_id?: string
+          prompt?: string
+          scene_index?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_video_scenes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "chat_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_transactions: {
         Row: {
           created_at: string
@@ -54,9 +255,11 @@ export type Database = {
           cost_usd: number
           created_at: string
           error_message: string | null
+          has_overlay: boolean
           id: string
           image_url: string
           model: string
+          overlay_cfg: Json
           prompt: string
           provider: string
           status: string
@@ -66,9 +269,11 @@ export type Database = {
           cost_usd?: number
           created_at?: string
           error_message?: string | null
+          has_overlay?: boolean
           id?: string
           image_url: string
           model?: string
+          overlay_cfg?: Json
           prompt: string
           provider?: string
           status?: string
@@ -78,9 +283,11 @@ export type Database = {
           cost_usd?: number
           created_at?: string
           error_message?: string | null
+          has_overlay?: boolean
           id?: string
           image_url?: string
           model?: string
+          overlay_cfg?: Json
           prompt?: string
           provider?: string
           status?: string
@@ -94,8 +301,10 @@ export type Database = {
           duration_s: number | null
           error_message: string | null
           external_id: string | null
+          has_overlay: boolean
           id: string
           model: string
+          overlay_cfg: Json
           prompt: string
           provider: string
           status: string
@@ -109,8 +318,10 @@ export type Database = {
           duration_s?: number | null
           error_message?: string | null
           external_id?: string | null
+          has_overlay?: boolean
           id?: string
           model: string
+          overlay_cfg?: Json
           prompt: string
           provider: string
           status?: string
@@ -124,8 +335,10 @@ export type Database = {
           duration_s?: number | null
           error_message?: string | null
           external_id?: string | null
+          has_overlay?: boolean
           id?: string
           model?: string
+          overlay_cfg?: Json
           prompt?: string
           provider?: string
           status?: string
