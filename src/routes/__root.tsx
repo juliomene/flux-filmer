@@ -116,7 +116,15 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    let lastUserId: string | null | undefined;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only react to real sign-in / sign-out transitions.
+      // TOKEN_REFRESHED, USER_UPDATED, INITIAL_SESSION fire frequently and
+      // would cause an invalidation loop.
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT") return;
+      const uid = session?.user?.id ?? null;
+      if (uid === lastUserId) return;
+      lastUserId = uid;
       router.invalidate();
       queryClient.invalidateQueries();
     });
