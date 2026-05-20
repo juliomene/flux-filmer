@@ -66,13 +66,13 @@ export async function generateImage(
     case "openai":
       return openAICompatibleImage(input, userId);
     case "xai":
-      // xAI Grok roteia via fal.ai
+      // xAI Grok roteia via fal.ai (prefixo xai/, sem fal-ai/)
       return falImage(
         {
           ...input,
           model: input.inputImageUrl
-            ? "fal-ai/xai/grok-imagine-image/edit"
-            : input.model || "fal-ai/xai/grok-imagine-image",
+            ? "xai/grok-imagine-image/edit"
+            : input.model || "xai/grok-imagine-image",
         },
         userId,
       );
@@ -157,7 +157,15 @@ async function googleGeminiImage(input: GenerateImageInput, userId: string): Pro
 
 async function falImage(input: GenerateImageInput, userId: string): Promise<ImageResult> {
   const body: Record<string, unknown> = { prompt: input.prompt };
-  if (input.inputImageUrl) body.image_url = input.inputImageUrl;
+  if (input.inputImageUrl) {
+    // xAI edit espera array; demais aceitam string
+    if (input.model.startsWith("xai/")) body.image_urls = [input.inputImageUrl];
+    else body.image_url = input.inputImageUrl;
+  }
+  if (input.model.startsWith("xai/")) {
+    body.resolution = "1k";
+    if (!input.inputImageUrl) body.num_images = 1;
+  }
   const res = await fetch(`https://fal.run/${input.model}`, {
     method: "POST",
     headers: { Authorization: `Key ${input.apiKey}`, "Content-Type": "application/json" },
