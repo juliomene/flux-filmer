@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated.videos'
 import { Route as AuthenticatedImagesRouteImport } from './routes/_authenticated.images'
+import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.chat'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -39,16 +40,23 @@ const AuthenticatedImagesRoute = AuthenticatedImagesRouteImport.update({
   path: '/images',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/chat': typeof AuthenticatedChatRoute
   '/images': typeof AuthenticatedImagesRoute
   '/videos': typeof AuthenticatedVideosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/chat': typeof AuthenticatedChatRoute
   '/images': typeof AuthenticatedImagesRoute
   '/videos': typeof AuthenticatedVideosRoute
 }
@@ -57,19 +65,21 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/images': typeof AuthenticatedImagesRoute
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/images' | '/videos'
+  fullPaths: '/' | '/auth' | '/chat' | '/images' | '/videos'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/images' | '/videos'
+  to: '/' | '/auth' | '/chat' | '/images' | '/videos'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/chat'
     | '/_authenticated/images'
     | '/_authenticated/videos'
   fileRoutesById: FileRoutesById
@@ -117,15 +127,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedImagesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/chat': {
+      id: '/_authenticated/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof AuthenticatedChatRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedImagesRoute: typeof AuthenticatedImagesRoute
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedImagesRoute: AuthenticatedImagesRoute,
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,
 }
@@ -142,3 +161,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
