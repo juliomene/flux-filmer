@@ -67,6 +67,46 @@ function extractVideoUrl(data: Record<string, unknown>): string {
   throw new Error("Resposta sem vídeo.");
 }
 
+// Extrai o último frame do vídeo (image url) via ffmpeg-api do fal.
+async function extractLastFrame(videoUrl: string): Promise<string | null> {
+  try {
+    const out = await falRun("fal-ai/ffmpeg-api/extract-frame", {
+      video_url: videoUrl,
+      frame_type: "last",
+    });
+    const img = (out.image as { url?: string } | undefined)?.url;
+    if (img) return img;
+    const frame = (out.frame as { url?: string } | undefined)?.url;
+    return frame ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Concatena vários vídeos em sequência. Retorna a URL final.
+async function mergeClips(clipUrls: string[], sceneDuration: number): Promise<string> {
+  if (clipUrls.length === 1) return clipUrls[0];
+  try {
+    const out = await falRun("fal-ai/ffmpeg-api/compose", {
+      tracks: [
+        {
+          id: "video",
+          type: "video",
+          keyframes: clipUrls.map((url, idx) => ({
+            url,
+            timestamp: idx * sceneDuration,
+            duration: sceneDuration,
+          })),
+        },
+      ],
+    });
+    const v = (out.video_url as string | undefined) ?? (out.video as { url?: string } | undefined)?.url;
+    return v ?? clipUrls[clipUrls.length - 1];
+  } catch {
+    return clipUrls[clipUrls.length - 1];
+  }
+}
+
 // ── Create conversation ─────────────────────────────────────────
 export const createConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -103,6 +143,7 @@ const SendSchema = z.object({
   provider: z.enum(["kling", "xai", "sora", "veo3"]),
   imageUrl: z.string().url().optional(),
   durationSeconds: z.number().int().min(3).max(10).default(5),
+  totalDurationSeconds: z.number().int().min(5).max(180).optional(),
   aspectRatio: z.enum(["16:9", "9:16", "1:1"]).default("16:9"),
 });
 
@@ -179,24 +220,46 @@ export const sendChatMessage = createServerFn({ method: "POST" })
           status: "ready",
         } as never);
       } else {
-        const model = data.imageUrl ? cfg.imageToVideo : cfg.textToVideo;
-        const out = await falRun(model, {
-          prompt: data.prompt,
-          ...(data.imageUrl ? { image_url: data.imageUrl } : {}),
-          duration: String(data.durationSeconds),
-          aspect_ratio: data.aspectRatio,
-        });
+        // ── Vídeo: 1+ cenas encadeadas para manter o personagem ─────
+        const sceneDur = data.durationSeconds;
+        const totalDur = data.totalDurationSeconds ?? sceneDur;
+        const sceneCount = Math.max(1, Math.ceil(totalDur / sceneDur));
+
+        const clips: string[] = [];
+        let nextSeedImage: string | undefined = data.imageUrl;
+
+        for (let i = 0; i < sceneCount; i++) {
+          const useImg = !!nextSeedImage;
+          const model = useImg ? cfg.imageToVideo : cfg.textToVideo;
+          // Mesmo prompt EXATO em todas as cenas — a fala/ação do usuário
+          // deve ser obedecida em cada clipe. O encadeamento via último
+          // frame mantém o personagem e o cenário.
+          const out = await falRun(model, {
+            prompt: data.prompt,
+            ...(useImg ? { image_url: nextSeedImage } : {}),
+            duration: String(sceneDur),
+            aspect_ratio: data.aspectRatio,
+          });
+          const clipUrl = extractVideoUrl(out);
+          clips.push(clipUrl);
+
+          if (i < sceneCount - 1) {
+            nextSeedImage = (await extractLastFrame(clipUrl)) ?? nextSeedImage;
+          }
+        }
+
+        const finalUrl = await mergeClips(clips, sceneDur);
         resultType = "video";
-        resultUrl = extractVideoUrl(out);
+        resultUrl = finalUrl;
 
         await supabase.from("generated_videos" as never).insert({
           user_id: userId,
           prompt: data.prompt,
           video_url: resultUrl,
-          model,
+          model: cfg.textToVideo,
           provider,
           status: "ready",
-          duration_s: data.durationSeconds,
+          duration_s: sceneCount * sceneDur,
         } as never);
       }
 

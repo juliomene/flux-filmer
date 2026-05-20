@@ -160,6 +160,7 @@ function ChatView() {
           mode,
           provider,
           durationSeconds: cfg.perScene,
+          totalDurationSeconds: cfg.duration,
           aspectRatio: aspect,
           imageUrl: vars.imageUrl,
         },
