@@ -1,61 +1,63 @@
-# VideoForge AI — Plano de Construção
+## Mudanças solicitadas
 
-SaaS de geração de vídeos longos com IA. Stack adaptada: **TanStack Start + Supabase + fal.ai** (em vez de Next.js/Vercel, conforme já alinhado), com server functions no Cloudflare Workers via Lovable.
+1. **Sem página de vendas** — `/` redireciona para `/dashboard` (se logado) ou `/auth`.
+2. **Sem créditos** — remover toda lógica de créditos da UI.
+3. **Tracking de custo em USD** — cada imagem e vídeo registra `cost_usd`. Mostrar custo por item, total do projeto e total da conta.
+4. **Geração real funcionando** — integração fal.ai via server functions (TanStack), upload pro Supabase Storage, polling assíncrono.
 
-## Fase 1 — Fundação (esta etapa)
+## Banco de dados (migração)
 
-1. **Banco de dados (Supabase migration)**
-   - `profiles` (display_name, avatar_url, credits=100 default) com trigger `on_auth_user_created`
-   - `projects` (user_id, title, prompt, status, video_url, duration_s, thumbnail_url)
-   - `project_scenes` (project_id, index, prompt, image_url, video_clip_url, status)
-   - `generated_images` (user_id, prompt, image_url, model)
-   - `credit_transactions` (user_id, delta, reason, project_id)
-   - RLS: usuário só vê os próprios registros em todas as tabelas
-   - Storage buckets: `images` (público), `videos` (público), `thumbnails` (público)
+- `generated_images`: adicionar `cost_usd numeric(10,4)`, `status text` (pending/ready/failed), `error_message text`.
+- `project_scenes`: adicionar `cost_usd numeric(10,4)`.
+- `projects`: adicionar `total_cost_usd numeric(10,4) default 0`.
+- `profiles`: manter coluna `credits` (sem mexer no schema pra não quebrar), mas UI ignora. Adicionar `total_spent_usd numeric(10,4) default 0` para o "gasto total da conta".
+- Remover tabela `credit_transactions`? **Não** — manter, é histórico. Apenas não usar mais na UI.
 
-2. **Auth**
-   - Página `/auth` (login + signup email/senha) com `emailRedirectTo`
-   - `_authenticated` layout route que redireciona para `/auth` se sem sessão
-   - `onAuthStateChange` no root + invalidate queries
-   - Componente `<UserMenu>` com logout
+## Server functions (fal.ai)
 
-3. **Layout & Design System**
-   - Tema escuro premium (preto/roxo neon estilo Runway/Sora)
-   - Tokens em `src/styles.css` (oklch): primary roxo neon, gradientes, glow
-   - Shell com sidebar (Dashboard, Criar, Projetos, Imagens, Configurações)
-   - Mobile-first, sidebar vira drawer < 768px
+Arquivo `src/lib/generation.functions.ts` (client-safe path):
 
-## Fase 2 — Páginas principais
+- `generateImage({ prompt })` → chama `https://fal.run/fal-ai/flux/schnell` (≈ $0.003/img), faz upload do resultado pro bucket `images/{user_id}/...`, insere em `generated_images` com `cost_usd`, retorna registro.
+- `startVideoFromImage({ projectId, sceneId, imageUrl, prompt, duration })` → submete job em `fal-ai/kling-video/v1.6/standard/image-to-video` via `fal.queue.submit`, salva `request_id` em `project_scenes`, status `generating_clip`.
+- `pollScene({ sceneId })` → checa status do job; quando pronto, baixa, sobe pro bucket `videos/`, atualiza `video_clip_url`, `cost_usd = 0.10 * duration_s`, status `ready`.
+- `createProjectFromPrompt({ prompt, title })` → cria projeto, gera roteiro via Lovable AI Gateway dividindo em N cenas (10s cada), insere `project_scenes` com prompts visuais, retorna `projectId`.
+- `composeProject({ projectId })` → quando todas cenas tiverem `video_clip_url`, monta lista de URLs (sem reencodar — concat client-side via `<video>` ou simplesmente disponibiliza playlist).
 
-4. **Landing `/`** — hero, features, pricing, CTA
-5. **Dashboard `/dashboard`** — créditos, últimos projetos, ações rápidas, seed de 3 mock se vazio
-6. **`/create`** — wizard: prompt → roteiro/cenas → imagens → vídeo (preview com React Query polling)
-7. **`/projects`** — grid com filtro por status, player inline, download .mp4
-8. **`/images`** — galeria de imagens geradas, reusar em projeto
-9. **`/settings`** — perfil, créditos, histórico de transações
+Custos hardcoded em `src/lib/costs.ts`:
+```
+flux/schnell: $0.003/imagem
+kling v1.6 standard: $0.05/segundo (image-to-video 5s = $0.25, 10s = $0.50)
+```
 
-## Fase 3 — Backend (server functions)
+## UI
 
-10. **fal.ai integration** — secret `FAL_KEY`, helper server-only
-11. Server functions:
-    - `generateScript` (LLM via Lovable AI Gateway → quebra prompt em cenas)
-    - `generateImage` (fal.ai flux) → upload pro bucket → cria row
-    - `generateClip` (fal.ai kling/luma 10s por cena) → upload
-    - `composeVideo` (concatena clipes + áudio via fal.ai)
-    - `getProject`, `listProjects`, `deductCredits`
-12. Polling de status via React Query
+- **`/` (index)**: substituir por redirect (`beforeLoad`) → `/dashboard` ou `/auth`.
+- **AppShell sidebar**: remover bloco de créditos; mostrar "Gasto total: $X.XX".
+- **Dashboard**: cards "Projetos", "Em produção", "Gasto total (USD)". Sem "créditos".
+- **`/create`**: wizard simples — título + prompt + nº de cenas → cria projeto, redireciona pra `/projects/$id`.
+- **`/projects`**: lista projetos com status, custo total, thumbnail.
+- **`/projects/$projectId`** (nova rota): mostra cenas, cada uma com imagem, vídeo (se pronto), prompt, status, **custo**. Botões: gerar imagem (Flux), animar (Kling), regerar. Polling via React Query `refetchInterval` enquanto algo está `generating_*`.
+- **`/images`**: galeria de `generated_images` com prompt e custo por item.
+- **`/settings`**: remover seção de créditos; mostrar "Gasto acumulado".
 
-## Detalhes técnicos
+## Por que estava com "erro"
 
-- TanStack Start file-based routes em `src/routes/`
-- `createServerFn` + `requireSupabaseAuth` para tudo que é user-scoped
-- `supabaseAdmin` apenas em webhooks/operações privilegiadas
-- Sem Edge Functions Supabase (usar server fns)
-- React Query para cache; toda UI em pt-BR
-- shadcn/ui já disponível
+A geração ainda não existia — `/create`, `/projects`, `/images` eram placeholders. Vou implementar de verdade agora.
 
-## Esta resposta entrega
+## Arquivos novos/editados
 
-**Apenas a Fase 1** (banco + auth + shell de layout + tema). Páginas e geração de vídeo virão nas próximas iterações para manter o escopo gerenciável e evitar bugs em cascata.
+- migração SQL (custos + status)
+- `src/lib/costs.ts`
+- `src/lib/fal.server.ts` (cliente fal.ai com `FAL_KEY`)
+- `src/lib/generation.functions.ts` (server fns: createProject, generateImage, startVideo, pollScene)
+- `src/lib/storage.server.ts` (helper upload Supabase)
+- `src/routes/index.tsx` (redirect)
+- `src/routes/_authenticated.create.tsx` (wizard real)
+- `src/routes/_authenticated.projects.tsx` (lista real)
+- `src/routes/_authenticated.projects.$projectId.tsx` (detalhe + polling)
+- `src/routes/_authenticated.images.tsx` (galeria real)
+- `src/routes/_authenticated.dashboard.tsx` (trocar créditos por gasto)
+- `src/routes/_authenticated.settings.tsx` (trocar créditos por gasto)
+- `src/components/app/AppShell.tsx` (sidebar sem créditos)
 
-Aprova esse caminho? Posso começar pela migração do banco assim que confirmar.
+Vou começar pela migração e em seguida implementar tudo.
