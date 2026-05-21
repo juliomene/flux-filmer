@@ -169,10 +169,10 @@ function SequentialPage() {
       </div>
 
       {/* STEP 1 */}
-      <Card className="space-y-4 p-6">
+      <Card className="space-y-3 p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">1. Inputs</h2>
-          <Badge variant="outline">Passo 1 de 3</Badge>
+          <h2 className="text-sm font-semibold">1. Inputs</h2>
+          <Badge variant="outline" className="text-[10px]">Passo 1 de 3</Badge>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
