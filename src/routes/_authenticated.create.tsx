@@ -416,15 +416,36 @@ function CreatePage() {
         </Card>
       )}
 
-      {mutation.data?.url && (
+      {(mutation.data?.url || (mutation.data?.clips?.length ?? 0) > 0) && (
         <Card className="mt-6 space-y-3 border-border bg-card/50 p-4">
           <p className="text-sm text-muted-foreground">{totalDuration}s • {mutation.data.clips.length} cena{mutation.data.clips.length > 1 ? "s" : ""}</p>
-          <video src={mutation.data.url} controls className="w-full rounded-md bg-black" />
-          <Button asChild variant="outline" size="sm">
-            <a href={mutation.data.url} target="_blank" rel="noreferrer" download>
-              <Download className="mr-2 h-4 w-4" /> Baixar MP4
-            </a>
-          </Button>
+          {mutation.data.url ? (
+            <>
+              <video src={mutation.data.url} controls autoPlay className="w-full rounded-md bg-black" />
+              <Button asChild variant="outline" size="sm">
+                <a href={mutation.data.url} target="_blank" rel="noreferrer" download>
+                  <Download className="mr-2 h-4 w-4" /> Baixar MP4
+                </a>
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-amber-500">Merge indisponível — exibindo cenas em sequência.</p>
+              <div className="space-y-2">
+                {mutation.data.clips.map((url, i) => (
+                  <div key={i} className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Cena {i + 1}</p>
+                    <video src={url} controls autoPlay muted className="w-full rounded-md bg-black" />
+                    <Button asChild variant="outline" size="sm">
+                      <a href={url} target="_blank" rel="noreferrer" download>
+                        <Download className="mr-2 h-4 w-4" /> Cena {i + 1}
+                      </a>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </Card>
       )}
 
