@@ -261,6 +261,37 @@ export async function generateClip(params: {
   return { url };
 }
 
+async function mergeVideoClips(apiKey: string, clips: string[], onProgress?: (msg: string) => void): Promise<string | null> {
+  if (clips.length <= 1) return clips[0] ?? null;
+  configureFal(apiKey);
+  onProgress?.("Unindo cenas em um único MP4...");
+  try {
+    const res = await fal.subscribe("fal-ai/ffmpeg-api/merge-videos", {
+      input: { video_urls: clips, target_fps: 24 },
+      logs: true,
+    });
+    const d = res.data as { video?: { url: string }; video_url?: string; output_url?: string; url?: string };
+    return d.video?.url ?? d.video_url ?? d.output_url ?? d.url ?? null;
+  } catch (primaryError) {
+    try {
+      const res = await fal.subscribe("fal-ai/ffmpeg-api", {
+        input: {
+          function: "concat_videos",
+          video_urls: clips,
+          inputs: clips.map((url, i) => ({ type: "video", url, label: `c${i}` })),
+          output_format: "mp4",
+        },
+      });
+      const d = res.data as { video?: { url: string }; video_url?: string; output_url?: string; url?: string };
+      return d.video?.url ?? d.video_url ?? d.output_url ?? d.url ?? null;
+    } catch {
+      // eslint-disable-next-line no-console
+      console.error("[fal-client] falhou ao unir os clipes", primaryError);
+      return null;
+    }
+  }
+}
+
 export function buildScenePrompts(params: {
   userPrompt: string;
   totalScenes: number;
