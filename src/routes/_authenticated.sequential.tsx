@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Loader2, Eye, EyeOff, Download, RefreshCw, CheckCircle2, AlertTriangle, Film, Layers, Settings2 } from "lucide-react";
 import { InputImagePicker } from "@/components/app/InputImagePicker";
+import { VideoOverlayEditor } from "@/components/app/VideoOverlayEditor";
 import { useSettings } from "@/stores/settings";
 import {
   VIDEO_MODELS,
@@ -380,28 +381,18 @@ function SequentialPage() {
               <h2 className="text-sm font-semibold">3. Vídeo final</h2>
               <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-500">pronto</Badge>
             </div>
-            <Button asChild variant="outline" size="sm">
-              <a href={mergedUrl} download target="_blank" rel="noreferrer">
-                <Download className="mr-1 h-3 w-3" /> Baixar MP4
-              </a>
-            </Button>
           </div>
-          <div className="flex justify-center rounded-md bg-muted/30 p-2">
-            <video
-              src={mergedUrl}
-              controls
-              autoPlay
-              className={cn(
-                "rounded-md bg-black object-contain",
-                aspect === "9:16" && "max-h-[60vh] w-auto",
-                aspect === "16:9" && "w-full max-w-2xl",
-                aspect === "1:1" && "max-h-[50vh] w-auto",
-                aspect === "4:5" && "max-h-[55vh] w-auto",
-              )}
-            />
-          </div>
+          <VideoOverlayEditor
+            src={mergedUrl}
+            aspectClass={cn(
+              aspect === "9:16" && "max-h-[60vh] aspect-[9/16]",
+              aspect === "16:9" && "w-full max-w-2xl aspect-video",
+              aspect === "1:1" && "max-h-[50vh] aspect-square",
+              aspect === "4:5" && "max-h-[55vh] aspect-[4/5]",
+            )}
+          />
           <p className="text-center text-[11px] text-muted-foreground">
-            Todas as cenas unidas em um único MP4. Use o botão acima para baixar.
+            Adicione textos ou imagens sobre o vídeo. Eles ficam permanentes apenas no arquivo baixado.
           </p>
         </Card>
       )}
