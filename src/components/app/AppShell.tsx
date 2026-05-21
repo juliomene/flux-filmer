@@ -3,7 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Sparkles, Image as ImageIcon, Film, LogOut, Menu, MessageSquare } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Film, LogOut, Menu, MessageSquare, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -11,6 +11,7 @@ const navItems = [
   { to: "/chat", label: "Chat IA", icon: MessageSquare },
   { to: "/images", label: "Imagens", icon: ImageIcon },
   { to: "/create", label: "Criar Vídeo", icon: Film },
+  { to: "/sequential", label: "Vídeo Sequencial", icon: Layers },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
