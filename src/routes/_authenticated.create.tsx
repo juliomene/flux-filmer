@@ -417,3 +417,53 @@ function CreatePage() {
     </div>
   );
 }
+
+function OverlayQuickPicker({ overlays, setOverlays }: { overlays: OverlayItem[]; setOverlays: (o: OverlayItem[]) => void }) {
+  const addPreset = (presetIdx: number) => {
+    const p = OVERLAY_PRESETS[presetIdx];
+    const item: OverlayItem = {
+      id: crypto.randomUUID(),
+      type: "text",
+      content: "SEU TEXTO AQUI",
+      x: p.x, y: p.y, fontSize: p.fontSize,
+      fontWeight: p.fontWeight, color: p.color, bgColor: p.bgColor,
+      bgOpacity: p.bgOpacity, bgRadius: p.bgRadius, padding: p.padding,
+      shadow: p.shadow, uppercase: p.uppercase, width: p.width,
+    };
+    setOverlays([...overlays, item]);
+  };
+  const updateItem = (id: string, patch: Partial<OverlayItem>) =>
+    setOverlays(overlays.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+  const removeItem = (id: string) => setOverlays(overlays.filter((o) => o.id !== id));
+
+  return (
+    <div className="space-y-3 rounded-md border border-border bg-muted/20 p-3">
+      <Label>Overlays no vídeo (opcional)</Label>
+      <div className="flex flex-wrap gap-2">
+        {OVERLAY_PRESETS.map((p, i) => (
+          <button key={p.name} type="button" onClick={() => addPreset(i)}
+            className="rounded-full border border-border px-3 py-1 text-xs transition hover:bg-muted">
+            + {p.name}
+          </button>
+        ))}
+      </div>
+      {overlays.length > 0 && (
+        <div className="space-y-2">
+          {overlays.map((o) => (
+            <div key={o.id} className="rounded border border-border bg-background p-2 space-y-2">
+              <div className="flex gap-2 items-center">
+                <Input value={o.content} onChange={(e) => updateItem(o.id, { content: e.target.value })} placeholder="Texto" className="h-8" />
+                <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(o.id)}>×</Button>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                <label className="flex items-center gap-1">Y: <input type="range" min={0} max={100} value={o.y} onChange={(e) => updateItem(o.id, { y: Number(e.target.value) })} /></label>
+                <input type="color" value={o.color} onChange={(e) => updateItem(o.id, { color: e.target.value })} className="h-6 w-8" />
+                <input type="color" value={o.bgColor} onChange={(e) => updateItem(o.id, { bgColor: e.target.value })} className="h-6 w-8" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
