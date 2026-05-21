@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, Film, Eye, EyeOff, Download, ExternalLink, CheckCircle2, Clock, Music, Languages } from "lucide-react";
@@ -160,8 +160,8 @@ function CreatePage() {
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {Array.from(new Set(VIDEO_MODELS.map((m) => m.provider))).map((prov) => (
-                <div key={prov}>
-                  <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">── {prov} ──</div>
+                <SelectGroup key={prov}>
+                  <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">── {prov} ──</SelectLabel>
                   {VIDEO_MODELS.filter((m) => m.provider === prov).map((m) => {
                     const mm = m as typeof m & { quality?: string; speed?: string; has_native_audio?: boolean };
                     return (
@@ -173,7 +173,7 @@ function CreatePage() {
                       </SelectItem>
                     );
                   })}
-                </div>
+                </SelectGroup>
               ))}
             </SelectContent>
           </Select>
