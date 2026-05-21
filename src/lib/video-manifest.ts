@@ -175,7 +175,15 @@ export function assembleScenePrompt(
   const speechLine = useNativeAudio
     ? `Speak ONLY the following line in ${bible.language}, lips synced exclusively to this text, do not invent or repeat any other line: "${scene.dialogue_chunk}"`
     : `(audio handled separately — generate video silent or with ambient sound only; do not lip-sync any other text)`;
+  const hasRef = (scene.reference_images && scene.reference_images.length > 0) || !!scene.previous_scene_last_frame;
+  const referenceLock = hasRef
+    ? [
+        `REFERENCE IMAGE IS THE GROUND TRUTH — the person, face, eyes, nose, mouth, skin tone, hair, body shape and clothing MUST match the reference image at 100%. Do NOT generate a different person. Do NOT restyle the face. Do NOT change ethnicity, age, gender, hairstyle or wardrobe.`,
+        `Treat the reference image as the first frame / identity anchor of this scene. The character in the output MUST be visually identical to the character in the reference.`,
+      ].join(" ")
+    : "";
   return [
+    referenceLock,
     `Use the provided reference images 100%. This is scene ${sceneIdx + 1} of ${total} in a single sequential video — this is NOT a standalone clip.`,
     `Continuation of previous scene: keep the exact same character, same face, same wardrobe, same body, same hair, same environment, same lighting, same camera, and same visual style as the previous scenes.`,
     `CHARACTER LOCK: ${bible.character_lock}`,
@@ -191,7 +199,9 @@ export function assembleScenePrompt(
     `Dialogue rule: ${speechLine}`,
     `Aspect ratio ${bible.aspect_ratio}. Ultra-realistic. Smooth, natural, safe motion.`,
     `NEGATIVE: ${scene.negative_prompt}`,
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export interface ValidationResult {
