@@ -16,6 +16,14 @@ interface SettingsStore {
   setSceneDuration: (s: number) => void;
   totalDuration: number;
   setTotalDuration: (s: number) => void;
+  language: string;
+  setLanguage: (l: string) => void;
+  audioType: "none" | "music" | "speech" | "both";
+  setAudioType: (a: "none" | "music" | "speech" | "both") => void;
+  audioPrompt: string;
+  setAudioPrompt: (p: string) => void;
+  style: string;
+  setStyle: (s: string) => void;
 }
 
 export const useSettings = create<SettingsStore>()(
@@ -35,6 +43,14 @@ export const useSettings = create<SettingsStore>()(
       setSceneDuration: (s) => set({ sceneDuration: s }),
       totalDuration: 10,
       setTotalDuration: (s) => set({ totalDuration: s }),
+      language: "Portuguese",
+      setLanguage: (l) => set({ language: l }),
+      audioType: "none",
+      setAudioType: (a) => set({ audioType: a }),
+      audioPrompt: "",
+      setAudioPrompt: (p) => set({ audioPrompt: p }),
+      style: "cinematic",
+      setStyle: (s) => set({ style: s }),
     }),
     { name: "videoforge-settings" },
   ),
