@@ -270,25 +270,66 @@ export function buildScenePrompts(params: {
   const { userPrompt, totalScenes, language, style = "cinematic" } = params;
 
   const visualAnchor = [
-    `IMPORTANT: Keep exact same character appearance, same face, same clothes, same hair throughout all scenes.`,
-    `Same lighting style. Same color grading. Same ${style} camera style.`,
-    `DO NOT change the character. DO NOT change the setting unless the story requires it.`,
+    `IMPORTANT CONTINUITY LOCK: Keep exact same character/model appearance, same face, same clothes, same hair, same body, same environment, same props, same lighting, same color grading and same ${style} camera style across every scene.`,
+    `This is one continuous video split into short clips for generation. Every new scene must continue directly from the previous frame, not restart the story and not become a new video.`,
+    `DO NOT change the character/model. DO NOT change the setting/cenario unless the current scene text explicitly says so. DO NOT repeat previous dialogue.`,
     `LANGUAGE RULE: The user prompt may be written in any language, but ALL spoken dialogue, voiceover, narration, captions, signs, and on-screen text in the final video MUST be translated to and rendered exclusively in ${language}. Do not mix languages. Translate any quoted dialogue from the prompt into natural, native-sounding ${language}, preserving meaning, tone and intent.`,
   ].join(" ");
 
   if (totalScenes === 1) return [`${visualAnchor} ${userPrompt}`];
 
-  // Cenas com beats diferentes — cada índice gera texto distinto garantido.
-  const parts = totalScenes <= 3
-    ? ["beginning of the story", "middle", "end"]
-    : ["beginning of the story", "early development", "middle", "climax", "end"];
-  const prompts = Array.from({ length: totalScenes }, (_, i) => {
-    const part = parts[Math.min(i, parts.length - 1)];
-    return `${visualAnchor} ${userPrompt} — ${part}, scene ${i + 1} of ${totalScenes}, cinematic continuity`;
-  });
+  const sceneBlocks = splitPromptIntoSceneBlocks(userPrompt, totalScenes);
+  const sharedContext = extractSharedVisualContext(userPrompt);
+  const prompts = sceneBlocks.map((block, i) => [
+    visualAnchor,
+    `Scene ${i + 1} of ${totalScenes}. Continuation of previous scene. Chronological segment ${i + 1}/${totalScenes}.`,
+    `Shared visual context to preserve exactly: ${sharedContext}`,
+    `Current scene only — do not speak or show text from other scenes: ${block}`,
+    `Dialogue rule: speak ONLY the dialogue/chunk present in Current scene. If the user's original prompt contains dialogue in another language, translate ONLY this current chunk to ${language}. Never repeat scene 1 dialogue in scene 2.`,
+  ].join("\n"));
   // eslint-disable-next-line no-console
   console.log("[fal-client] scene prompts:", prompts);
   return prompts;
+}
+
+function splitPromptIntoSceneBlocks(prompt: string, totalScenes: number): string[] {
+  const normalized = prompt.trim();
+  const explicit = normalized
+    .split(/(?=^\s*(?:🎬\s*)?(?:PARTE|CENA|SCENE)\s*\d+\b)/gim)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (explicit.length >= totalScenes) return normalizeSceneBlockCount(explicit, totalScenes);
+
+  const paragraphs = normalized
+    .split(/\n{2,}|(?<=[.!?])\s+(?=[A-ZÀ-Ú“"'])/g)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (paragraphs.length >= totalScenes) return normalizeSceneBlockCount(paragraphs, totalScenes);
+
+  const words = normalized.split(/\s+/).filter(Boolean);
+  const perScene = Math.max(1, Math.ceil(words.length / totalScenes));
+  return Array.from({ length: totalScenes }, (_, i) => {
+    const chunk = words.slice(i * perScene, (i + 1) * perScene).join(" ").trim();
+    return chunk || `continuation beat ${i + 1}`;
+  });
+}
+
+function normalizeSceneBlockCount(blocks: string[], totalScenes: number): string[] {
+  if (blocks.length === totalScenes) return blocks;
+  if (blocks.length < totalScenes) {
+    return Array.from({ length: totalScenes }, (_, i) => blocks[i] ?? `silent continuation beat ${i + 1}`);
+  }
+  const out = blocks.slice(0, totalScenes - 1);
+  out.push(blocks.slice(totalScenes - 1).join("\n\n"));
+  return out;
+}
+
+function extractSharedVisualContext(prompt: string): string {
+  const withoutDialogue = prompt
+    .replace(/(?:di[aá]logo|dialogue|fala|narra[cç][aã]o)\s*\([^)]*\)?\s*:\s*[\s\S]*?(?=\n\s*(?:🎬\s*)?(?:PARTE|CENA|SCENE)\s*\d+\b|$)/gim, "")
+    .replace(/“[^”]{3,}”|"[^"]{3,}"/g, "")
+    .trim();
+  return withoutDialogue || "same subject, same wardrobe, same environment and same camera setup described by the user";
 }
 
 // CONSISTÊNCIA ENTRE CENAS:
