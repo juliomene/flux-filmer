@@ -111,7 +111,7 @@ function CreatePage() {
         },
       });
 
-      let finalUrl = merged_url ?? clips[clips.length - 1] ?? "";
+      let finalUrl = merged_url ?? "";
 
       // Aplica overlays se houver
       if (finalUrl && overlays.length > 0) {
