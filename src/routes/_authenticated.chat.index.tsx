@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Sparkles } from "lucide-react";
 import { createConversation, sendChatMessage } from "@/lib/chat.functions";
 import { toast } from "sonner";
 
@@ -50,9 +50,17 @@ function ChatEmpty() {
   };
 
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="flex-1" />
-      <div className="border-t border-border bg-card/30 p-4 backdrop-blur">
+    <div className="flex flex-1 flex-col bg-background">
+      <div className="flex flex-1 items-center justify-center px-4">
+        <div className="max-w-md text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <h1 className="text-xl font-semibold">Comece uma conversa</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Digite um prompt abaixo para criar imagens no chat.</p>
+        </div>
+      </div>
+      <div className="border-t border-border bg-background/95 p-4 backdrop-blur">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -60,7 +68,7 @@ function ChatEmpty() {
           }}
           className="mx-auto max-w-3xl"
         >
-          <div className="flex items-end gap-2 rounded-xl border border-border bg-background p-2">
+          <div className="flex items-end gap-2 rounded-xl border border-border bg-card/60 p-2 shadow-sm">
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
