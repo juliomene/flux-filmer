@@ -223,7 +223,7 @@ export function buildScenePrompts(params: {
     `IMPORTANT: Keep exact same character appearance, same face, same clothes, same hair throughout all scenes.`,
     `Same lighting style. Same color grading. Same ${style} camera style.`,
     `DO NOT change the character. DO NOT change the setting unless the story requires it.`,
-    `All spoken dialogue, text on screen, and narration must be in ${language}.`,
+    `LANGUAGE RULE: The user prompt may be written in any language, but ALL spoken dialogue, voiceover, narration, captions, signs, and on-screen text in the final video MUST be translated to and rendered exclusively in ${language}. Do not mix languages. Translate any quoted dialogue from the prompt into natural, native-sounding ${language}, preserving meaning, tone and intent.`,
   ].join(" ");
 
   if (totalScenes === 1) return [`${visualAnchor} ${userPrompt}`];
