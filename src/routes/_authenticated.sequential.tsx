@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
-import { Loader2, Eye, EyeOff, Download, RefreshCw, CheckCircle2, AlertTriangle, Film, Layers } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Loader2, Eye, EyeOff, Download, RefreshCw, CheckCircle2, AlertTriangle, Film, Layers, Settings2 } from "lucide-react";
 import { InputImagePicker } from "@/components/app/InputImagePicker";
 import { useSettings } from "@/stores/settings";
 import {
@@ -155,7 +156,7 @@ function SequentialPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 p-4 md:p-6">
+    <div className="mx-auto max-w-4xl space-y-4 p-4 md:p-6">
       <div className="flex items-center gap-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <Layers className="h-4 w-4" />
@@ -171,53 +172,44 @@ function SequentialPage() {
       {/* STEP 1 */}
       <Card className="space-y-3 p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">1. Inputs</h2>
+          <h2 className="text-sm font-semibold">1. Conteúdo</h2>
           <Badge variant="outline" className="text-[10px]">Passo 1 de 3</Badge>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Título do vídeo</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: anúncio do produto X" />
-          </div>
-          <div className="space-y-2">
-            <Label>Idioma</Label>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {ALL_LANGUAGES.map((l) => <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Essenciais: título + roteiro */}
+        <div className="space-y-1.5">
+          <Label className="text-xs">Título do vídeo</Label>
+          <Input className="h-9" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: anúncio do produto X" />
         </div>
 
-        <div className="space-y-2">
-          <Label>Prompt visual (descrição cinemática base)</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Prompt visual (descrição base do personagem/cenário)</Label>
           <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={2}
+            className="text-sm"
             placeholder="Mulher de 30 anos, jaqueta jeans, cozinha clara, gravando vídeo selfie..." />
         </div>
 
-        <div className="space-y-2">
-          <Label>Roteiro completo (será dividido entre as cenas, sem repetir)</Label>
-          <Textarea value={script} onChange={(e) => setScript(e.target.value)} rows={6}
+        <div className="space-y-1.5">
+          <Label className="text-xs">Roteiro completo <span className="text-muted-foreground font-normal">— dividido entre as cenas, sem repetir</span></Label>
+          <Textarea value={script} onChange={(e) => setScript(e.target.value)} rows={4}
+            className="text-sm"
             placeholder="Cole o texto inteiro que o personagem deve falar. O sistema divide automaticamente." />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <InputImagePicker value={characterRef} onChange={setCharacterRef} />
-          <InputImagePicker value={environmentRef} onChange={setEnvironmentRef} />
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-4">
-          <div className="space-y-2">
-            <Label>Duração total (s)</Label>
-            <Input type="number" min={5} max={180} value={totalDuration}
-              onChange={(e) => setTotalDuration(Number(e.target.value))} />
+        {/* Linha compacta com parâmetros principais */}
+        <div className="grid gap-2 sm:grid-cols-4">
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">Duração total</Label>
+            <div className="relative">
+              <Input className="h-9 pr-8" type="number" min={5} max={180} value={totalDuration}
+                onChange={(e) => setTotalDuration(Number(e.target.value))} />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">s</span>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>Duração por cena</Label>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">Por cena</Label>
             <Select value={String(sceneDuration)} onValueChange={(v) => setSceneDuration(Number(v) as 5 | 8 | 10)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="5">5s</SelectItem>
                 <SelectItem value="8">8s</SelectItem>
@@ -225,70 +217,105 @@ function SequentialPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>Formato</Label>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">Formato</Label>
             <Select value={selectedFormat} onValueChange={setSelectedFormat}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="portrait_9_16">📱 9:16 vertical</SelectItem>
-                <SelectItem value="landscape_16_9">🖥️ 16:9 horizontal</SelectItem>
-                <SelectItem value="square_hd">⬛ 1:1 quadrado</SelectItem>
+                <SelectItem value="portrait_9_16">📱 9:16</SelectItem>
+                <SelectItem value="landscape_16_9">🖥️ 16:9</SelectItem>
+                <SelectItem value="square_hd">⬛ 1:1</SelectItem>
                 <SelectItem value="portrait_4_5">📷 4:5</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>Modelo de vídeo</Label>
-            <Select value={modelKey} onValueChange={setModelKey}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">Idioma</Label>
+            <Select value={language} onValueChange={setLanguage}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Array.from(new Set(VIDEO_MODELS.map((m) => m.provider))).map((p) => (
-                  <SelectGroup key={p}>
-                    <SelectLabel>{p}</SelectLabel>
-                    {VIDEO_MODELS.filter((m) => m.provider === p).map((m) => (
-                      <SelectItem key={`${m.id}__${m.quality}`} value={`${m.id}__${m.quality}`}>
-                        {m.name} · {m.quality} · ${m.cost_per_5s}/5s
-                      </SelectItem>
+                {ALL_LANGUAGES.map((l) => <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Configurações avançadas */}
+        <Accordion type="single" collapsible className="rounded-md border border-border/60">
+          <AccordionItem value="advanced" className="border-0">
+            <AccordionTrigger className="px-3 py-2 text-xs hover:no-underline">
+              <span className="flex items-center gap-2">
+                <Settings2 className="h-3.5 w-3.5" />
+                Configurações avançadas
+                <span className="text-muted-foreground font-normal">— modelo, referências, áudio, API key</span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3 px-3 pb-3">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-muted-foreground">Modelo de vídeo</Label>
+                <Select value={modelKey} onValueChange={setModelKey}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Array.from(new Set(VIDEO_MODELS.map((m) => m.provider))).map((p) => (
+                      <SelectGroup key={p}>
+                        <SelectLabel>{p}</SelectLabel>
+                        {VIDEO_MODELS.filter((m) => m.provider === p).map((m) => (
+                          <SelectItem key={`${m.id}__${m.quality}`} value={`${m.id}__${m.quality}`}>
+                            {m.name} · {m.quality} · ${m.cost_per_5s}/5s
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+                  </SelectContent>
+                </Select>
+              </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <Label>Modo de áudio</Label>
-            <Select value={audioMode} onValueChange={(v) => setAudioMode(v as typeof audioMode)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tts_external">TTS externo (recomendado)</SelectItem>
-                <SelectItem value="native">Fala nativa do modelo</SelectItem>
-                <SelectItem value="silent">Sem áudio</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label>Voz TTS (apenas modo externo)</Label>
-            <Input value={voice} onChange={(e) => setVoice(e.target.value)}
-              placeholder="Nome da voz (PlayAI)" disabled={audioMode !== "tts_external"} />
-          </div>
-        </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground">Referência de personagem</Label>
+                  <InputImagePicker value={characterRef} onChange={setCharacterRef} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground">Referência de cenário</Label>
+                  <InputImagePicker value={environmentRef} onChange={setEnvironmentRef} />
+                </div>
+              </div>
 
-        <div className="space-y-2">
-          <Label>fal.ai API Key</Label>
-          <div className="flex gap-2">
-            <Input type={showKey ? "text" : "password"} value={falApiKey}
-              onChange={(e) => setFalApiKey(e.target.value)} placeholder="fal_..." />
-            <Button variant="outline" size="icon" onClick={() => setShowKey(!showKey)}>
-              {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
-          </div>
-        </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground">Modo de áudio</Label>
+                  <Select value={audioMode} onValueChange={(v) => setAudioMode(v as typeof audioMode)}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tts_external">TTS externo (recomendado)</SelectItem>
+                      <SelectItem value="native">Fala nativa do modelo</SelectItem>
+                      <SelectItem value="silent">Sem áudio</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label className="text-[11px] text-muted-foreground">Voz TTS</Label>
+                  <Input className="h-9" value={voice} onChange={(e) => setVoice(e.target.value)}
+                    placeholder="Nome da voz (PlayAI)" disabled={audioMode !== "tts_external"} />
+                </div>
+              </div>
 
-        <Button onClick={buildManifest} className="w-full" size="lg">
-          Gerar manifesto
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-muted-foreground">fal.ai API Key</Label>
+                <div className="flex gap-2">
+                  <Input className="h-9" type={showKey ? "text" : "password"} value={falApiKey}
+                    onChange={(e) => setFalApiKey(e.target.value)} placeholder="fal_..." />
+                  <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setShowKey(!showKey)}>
+                    {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
+        <Button onClick={buildManifest} className="w-full">
+          Gerar manifesto →
         </Button>
       </Card>
 
@@ -337,18 +364,35 @@ function SequentialPage() {
 
       {/* STEP 3 */}
       {mergedUrl && (
-        <Card className="space-y-2 p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">3. Vídeo final</h2>
+        <Card className="space-y-3 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold">3. Vídeo final</h2>
+              <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-500">pronto</Badge>
+            </div>
             <Button asChild variant="outline" size="sm">
               <a href={mergedUrl} download target="_blank" rel="noreferrer">
                 <Download className="mr-1 h-3 w-3" /> Baixar MP4
               </a>
             </Button>
           </div>
-          <div className="mx-auto max-w-sm">
-            <video src={mergedUrl} controls autoPlay className="w-full rounded-lg" />
+          <div className="flex justify-center rounded-md bg-muted/30 p-2">
+            <video
+              src={mergedUrl}
+              controls
+              autoPlay
+              className={cn(
+                "rounded-md bg-black object-contain",
+                aspect === "9:16" && "max-h-[60vh] w-auto",
+                aspect === "16:9" && "w-full max-w-2xl",
+                aspect === "1:1" && "max-h-[50vh] w-auto",
+                aspect === "4:5" && "max-h-[55vh] w-auto",
+              )}
+            />
           </div>
+          <p className="text-center text-[11px] text-muted-foreground">
+            Todas as cenas unidas em um único MP4. Use o botão acima para baixar.
+          </p>
         </Card>
       )}
     </div>
