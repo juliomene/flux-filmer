@@ -347,6 +347,11 @@ function CreatePage() {
           {klingSpeechWarning && (
             <p className="text-xs text-amber-500">{klingSpeechWarning}</p>
           )}
+          {audioType !== "none" && (model as { has_native_audio?: boolean }).has_native_audio ? (
+            <p className="text-xs text-emerald-500">✅ Este modelo já gera áudio sincronizado nativamente</p>
+          ) : audioType !== "none" ? (
+            <p className="text-xs text-muted-foreground">🎵 Trilha musical será adicionada após a geração</p>
+          ) : null}
         </div>
 
         <OverlayQuickPicker overlays={overlays} setOverlays={setOverlays} />
