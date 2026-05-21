@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Send, Settings2, Paperclip, Download, X } from "lucide-react";
+import { Loader2, Send, Settings2, Paperclip, Download, X, Image as ImageIcon, Film } from "lucide-react";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { ALL_LANGUAGES } from "@/lib/fal-client";
 import { toast } from "sonner";
@@ -205,10 +205,13 @@ function ChatView() {
   const totalScenes = mode === "video" ? Math.max(1, Math.ceil(duration / cfg.perScene)) : 1;
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
+    <div className="flex h-full min-h-0 flex-1 flex-col bg-background">
+      <header className="flex items-center justify-between border-b border-border bg-background/95 px-5 py-3 backdrop-blur">
         <h2 className="flex items-center gap-2 text-sm font-medium">
-          {mode === "video" ? "🎬 Vídeo" : "🖼️ Imagem"} · {provider}
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            {mode === "video" ? <Film className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+          </span>
+          <span>{mode === "video" ? "Vídeo" : "Imagem"} · {provider === "xai" ? "xAI" : provider}</span>
           {mode === "video" && totalScenes > 1 && (
             <span className="text-xs text-muted-foreground">
               {totalScenes} cenas × {cfg.perScene}s = {duration}s
@@ -217,13 +220,13 @@ function ChatView() {
         </h2>
         <button
           onClick={() => setShowConfig((s) => !s)}
-          className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="flex items-center gap-1.5 rounded-lg border border-border bg-card/50 px-3 py-2 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
         >
           <Settings2 className="h-3.5 w-3.5" /> Configurações
         </button>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-6">
         <div className="mx-auto max-w-3xl space-y-4">
           {messages.isLoading && <Skeleton className="h-20 w-full" />}
           {list.map((m) => (
@@ -244,7 +247,7 @@ function ChatView() {
       </div>
 
       {/* Input */}
-      <div className="relative border-t border-border bg-card/30 p-4 backdrop-blur">
+      <div className="relative border-t border-border bg-background/95 p-4 backdrop-blur">
         {showConfig && (
           <ConfigPanel
             cfg={cfg}
@@ -270,7 +273,7 @@ function ChatView() {
               </button>
             </div>
           )}
-          <div className="flex items-end gap-2 rounded-xl border border-border bg-background p-2">
+          <div className="flex items-end gap-2 rounded-xl border border-border bg-card/60 p-2 shadow-sm">
             <AttachImageButton onAttach={setAttachedUrl} />
             <button
               type="button"
