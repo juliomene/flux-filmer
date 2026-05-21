@@ -490,23 +490,11 @@ export async function generateLongVideo(params: {
     }
   }
 
-  let merged_url: string | null = null;
-  if (clips.length > 1) {
-    try {
-      const mergeInput: Record<string, unknown> = {
-        function: "concat_videos",
-        inputs: clips.map((url, i) => ({ type: "video", url, label: `c${i}` })),
-        output_format: "mp4",
-      };
-      if (audioUrl) mergeInput.audio_url = audioUrl;
-      const mergeResult = await fal.subscribe("fal-ai/ffmpeg-api", { input: mergeInput });
-      const data = mergeResult.data as { video_url?: string; output_url?: string; url?: string };
-      merged_url = data.video_url ?? data.output_url ?? data.url ?? clips[clips.length - 1];
-    } catch {
-      merged_url = clips[clips.length - 1];
-    }
-  } else {
-    merged_url = clips[0] ?? null;
+  let merged_url = await mergeVideoClips(params.apiKey, clips, (msg) => params.onSceneProgress?.(scenes.length, scenes.length, msg));
+
+  if (merged_url && audioUrl) {
+    params.onSceneProgress?.(scenes.length, scenes.length, "Adicionando trilha musical ao vídeo final...");
+    merged_url = await muxVideoAudio({ apiKey: params.apiKey, videoUrl: merged_url, audioUrl });
   }
 
   return { clips, merged_url };
