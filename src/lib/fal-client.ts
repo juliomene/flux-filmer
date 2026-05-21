@@ -1087,7 +1087,12 @@ async function runSingleScene(
       if (audio) {
         scene.audio_url = audio;
         opts.onProgress?.(`Cena ${scene.order}: sincronizando áudio...`);
-        scene.final_url = await muxVideoAudio({ apiKey, videoUrl: clip.url, audioUrl: audio });
+        scene.final_url = await muxVideoAudio({
+          apiKey,
+          videoUrl: clip.url,
+          audioUrl: audio,
+          durationSeconds: scene.duration_seconds,
+        });
       } else {
         scene.final_url = clip.url;
       }
