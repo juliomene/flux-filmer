@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,26 +20,30 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      if (data.session) {
-        // Hard redirect so _authenticated reads the persisted session cleanly
-        window.location.replace("/chat");
-      } else {
-        setLoading(false);
+    const checkSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (!mounted) return;
+        if (!error && data.user) {
+          navigate({ to: "/chat", replace: true });
+        }
+      } finally {
+        if (mounted) setLoading(false);
       }
-    });
+    };
+    void checkSession();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,8 +58,7 @@ function AuthPage() {
       return toast.error("Não foi possível iniciar a sessão. Tente novamente.");
     }
     toast.success("Bem-vindo de volta!");
-    // Hard redirect garante que o beforeLoad de _authenticated leia a sessão já persistida
-    window.location.href = "/chat";
+    navigate({ to: "/chat", replace: true });
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -75,7 +78,7 @@ function AuthPage() {
     }
     toast.success("Conta criada! Verifique seu e-mail se a confirmação estiver ativada.");
     if (data.session) {
-      window.location.href = "/chat";
+      navigate({ to: "/chat", replace: true });
     } else {
       setLoading(false);
     }
