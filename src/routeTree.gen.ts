@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedSequentialRouteImport } from './routes/_authenticated.sequential'
 import { Route as AuthenticatedImagesRouteImport } from './routes/_authenticated.images'
 import { Route as AuthenticatedCreateRouteImport } from './routes/_authenticated.create'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.chat'
@@ -31,6 +32,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSequentialRoute = AuthenticatedSequentialRouteImport.update({
+  id: '/sequential',
+  path: '/sequential',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedImagesRoute = AuthenticatedImagesRouteImport.update({
   id: '/images',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/create': typeof AuthenticatedCreateRoute
   '/images': typeof AuthenticatedImagesRoute
+  '/sequential': typeof AuthenticatedSequentialRoute
   '/chat/$id': typeof AuthenticatedChatIdRoute
   '/chat/': typeof AuthenticatedChatIndexRoute
 }
@@ -72,6 +79,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/create': typeof AuthenticatedCreateRoute
   '/images': typeof AuthenticatedImagesRoute
+  '/sequential': typeof AuthenticatedSequentialRoute
   '/chat/$id': typeof AuthenticatedChatIdRoute
   '/chat': typeof AuthenticatedChatIndexRoute
 }
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/create': typeof AuthenticatedCreateRoute
   '/_authenticated/images': typeof AuthenticatedImagesRoute
+  '/_authenticated/sequential': typeof AuthenticatedSequentialRoute
   '/_authenticated/chat/$id': typeof AuthenticatedChatIdRoute
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
 }
@@ -94,10 +103,18 @@ export interface FileRouteTypes {
     | '/chat'
     | '/create'
     | '/images'
+    | '/sequential'
     | '/chat/$id'
     | '/chat/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/create' | '/images' | '/chat/$id' | '/chat'
+  to:
+    | '/'
+    | '/auth'
+    | '/create'
+    | '/images'
+    | '/sequential'
+    | '/chat/$id'
+    | '/chat'
   id:
     | '__root__'
     | '/'
@@ -106,6 +123,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chat'
     | '/_authenticated/create'
     | '/_authenticated/images'
+    | '/_authenticated/sequential'
     | '/_authenticated/chat/$id'
     | '/_authenticated/chat/'
   fileRoutesById: FileRoutesById
@@ -138,6 +156,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/sequential': {
+      id: '/_authenticated/sequential'
+      path: '/sequential'
+      fullPath: '/sequential'
+      preLoaderRoute: typeof AuthenticatedSequentialRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/images': {
       id: '/_authenticated/images'
@@ -194,12 +219,14 @@ interface AuthenticatedRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedCreateRoute: typeof AuthenticatedCreateRoute
   AuthenticatedImagesRoute: typeof AuthenticatedImagesRoute
+  AuthenticatedSequentialRoute: typeof AuthenticatedSequentialRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedCreateRoute: AuthenticatedCreateRoute,
   AuthenticatedImagesRoute: AuthenticatedImagesRoute,
+  AuthenticatedSequentialRoute: AuthenticatedSequentialRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -214,3 +241,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

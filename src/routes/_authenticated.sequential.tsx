@@ -1,0 +1,389 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
+import { Loader2, Eye, EyeOff, Download, RefreshCw, CheckCircle2, AlertTriangle, Film, Layers } from "lucide-react";
+import { InputImagePicker } from "@/components/app/InputImagePicker";
+import { useSettings } from "@/stores/settings";
+import {
+  VIDEO_MODELS,
+  ratioToAspect,
+  ALL_LANGUAGES,
+  generateFromManifest,
+  regenerateScene,
+} from "@/lib/fal-client";
+import {
+  buildLocalManifest,
+  validateManifest,
+  type VideoManifest,
+  type Scene,
+} from "@/lib/video-manifest";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/_authenticated/sequential")({
+  head: () => ({ meta: [{ title: "Vídeo Sequencial — Forge" }] }),
+  component: SequentialPage,
+});
+
+function SequentialPage() {
+  const { falApiKey, setFalApiKey, selectedFormat, setSelectedFormat, language, setLanguage } = useSettings();
+
+  // Step 1
+  const [title, setTitle] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [script, setScript] = useState("");
+  const [characterRef, setCharacterRef] = useState("");
+  const [environmentRef, setEnvironmentRef] = useState("");
+  const [totalDuration, setTotalDuration] = useState(30);
+  const [sceneDuration, setSceneDuration] = useState<5 | 8 | 10>(5);
+  const [audioMode, setAudioMode] = useState<"tts_external" | "native" | "silent">("tts_external");
+  const [voice, setVoice] = useState("Jennifer (English (US)/American)");
+  const [modelKey, setModelKey] = useState("fal-ai/kling-video/v1.6/standard/text-to-video__480p");
+  const [showKey, setShowKey] = useState(false);
+
+  // Step 2/3
+  const [manifest, setManifest] = useState<VideoManifest | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [busyScene, setBusyScene] = useState<number | null>(null);
+  const [progress, setProgress] = useState("");
+  const [mergedUrl, setMergedUrl] = useState<string | null>(null);
+
+  const model = useMemo(
+    () => VIDEO_MODELS.find((m) => `${m.id}__${m.quality}` === modelKey) ?? VIDEO_MODELS[0],
+    [modelKey],
+  );
+  const aspect = ratioToAspect(selectedFormat);
+
+  const validation = manifest ? validateManifest(manifest) : null;
+
+  const buildManifest = () => {
+    if (!prompt.trim() || !script.trim()) {
+      toast.error("Preencha prompt e roteiro completo.");
+      return;
+    }
+    const m = buildLocalManifest({
+      title: title || prompt.slice(0, 60),
+      prompt,
+      script,
+      totalDuration,
+      sceneDuration,
+      language,
+      voice,
+      audioMode,
+      characterRef: characterRef || null,
+      environmentRef: environmentRef || null,
+      aspectRatio: aspect,
+    });
+    setManifest(m);
+    setMergedUrl(null);
+    toast.success(`Manifesto criado com ${m.total_scenes} cenas.`);
+  };
+
+  const updateScene = (idx: number, patch: Partial<Scene>) => {
+    setManifest((m) => {
+      if (!m) return m;
+      const next = { ...m, scenes: m.scenes.map((s, i) => (i === idx ? { ...s, ...patch } : s)) };
+      return next;
+    });
+  };
+
+  const generateAll = async () => {
+    if (!manifest) return;
+    if (!falApiKey) return toast.error("Configure sua fal.ai API key.");
+    const v = validateManifest(manifest);
+    if (!v.ok) return toast.error(v.errors[0]);
+    setGenerating(true);
+    setMergedUrl(null);
+    try {
+      const res = await generateFromManifest({
+        apiKey: falApiKey,
+        manifest,
+        modelConfig: model,
+        quality: model.quality?.includes("1080") || model.quality === "720p" ? "pro" : "standard",
+        onProgress: setProgress,
+        onSceneUpdate: (s) => updateScene(s.order - 1, s),
+      });
+      setMergedUrl(res.merged_url);
+      toast.success("Vídeo sequencial gerado.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setGenerating(false);
+      setProgress("");
+    }
+  };
+
+  const regenOne = async (idx: number) => {
+    if (!manifest || !falApiKey) return;
+    setBusyScene(idx);
+    try {
+      await regenerateScene(
+        {
+          apiKey: falApiKey,
+          manifest,
+          modelConfig: model,
+          quality: "standard",
+          onProgress: setProgress,
+          onSceneUpdate: (s) => updateScene(s.order - 1, s),
+        },
+        idx,
+      );
+      toast.success(`Cena ${idx + 1} regerada.`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusyScene(null);
+      setProgress("");
+    }
+  };
+
+  const downloadManifest = () => {
+    if (!manifest) return;
+    const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${manifest.title.replace(/\s+/g, "_")}_manifest.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-6 p-6">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Layers className="h-5 w-5" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold">Vídeo Sequencial</h1>
+          <p className="text-sm text-muted-foreground">
+            Cenas curtas que parecem um vídeo único: mesmo personagem, mesmo cenário, fala dividida sem repetir.
+          </p>
+        </div>
+      </div>
+
+      {/* STEP 1 */}
+      <Card className="space-y-4 p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">1. Inputs</h2>
+          <Badge variant="outline">Passo 1 de 3</Badge>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Título do vídeo</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: anúncio do produto X" />
+          </div>
+          <div className="space-y-2">
+            <Label>Idioma</Label>
+            <Select value={language} onValueChange={setLanguage}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ALL_LANGUAGES.map((l) => <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Prompt visual (descrição cinemática base)</Label>
+          <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={2}
+            placeholder="Mulher de 30 anos, jaqueta jeans, cozinha clara, gravando vídeo selfie..." />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Roteiro completo (será dividido entre as cenas, sem repetir)</Label>
+          <Textarea value={script} onChange={(e) => setScript(e.target.value)} rows={6}
+            placeholder="Cole o texto inteiro que o personagem deve falar. O sistema divide automaticamente." />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <InputImagePicker value={characterRef} onChange={setCharacterRef} />
+          <InputImagePicker value={environmentRef} onChange={setEnvironmentRef} />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="space-y-2">
+            <Label>Duração total (s)</Label>
+            <Input type="number" min={5} max={180} value={totalDuration}
+              onChange={(e) => setTotalDuration(Number(e.target.value))} />
+          </div>
+          <div className="space-y-2">
+            <Label>Duração por cena</Label>
+            <Select value={String(sceneDuration)} onValueChange={(v) => setSceneDuration(Number(v) as 5 | 8 | 10)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5s</SelectItem>
+                <SelectItem value="8">8s</SelectItem>
+                <SelectItem value="10">10s</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Formato</Label>
+            <Select value={selectedFormat} onValueChange={setSelectedFormat}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="portrait_9_16">📱 9:16 vertical</SelectItem>
+                <SelectItem value="landscape_16_9">🖥️ 16:9 horizontal</SelectItem>
+                <SelectItem value="square_hd">⬛ 1:1 quadrado</SelectItem>
+                <SelectItem value="portrait_4_5">📷 4:5</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Modelo de vídeo</Label>
+            <Select value={modelKey} onValueChange={setModelKey}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Array.from(new Set(VIDEO_MODELS.map((m) => m.provider))).map((p) => (
+                  <SelectGroup key={p}>
+                    <SelectLabel>{p}</SelectLabel>
+                    {VIDEO_MODELS.filter((m) => m.provider === p).map((m) => (
+                      <SelectItem key={`${m.id}__${m.quality}`} value={`${m.id}__${m.quality}`}>
+                        {m.name} · {m.quality} · ${m.cost_per_5s}/5s
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <Label>Modo de áudio</Label>
+            <Select value={audioMode} onValueChange={(v) => setAudioMode(v as typeof audioMode)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tts_external">TTS externo (recomendado)</SelectItem>
+                <SelectItem value="native">Fala nativa do modelo</SelectItem>
+                <SelectItem value="silent">Sem áudio</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Voz TTS (apenas modo externo)</Label>
+            <Input value={voice} onChange={(e) => setVoice(e.target.value)}
+              placeholder="Nome da voz (PlayAI)" disabled={audioMode !== "tts_external"} />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>fal.ai API Key</Label>
+          <div className="flex gap-2">
+            <Input type={showKey ? "text" : "password"} value={falApiKey}
+              onChange={(e) => setFalApiKey(e.target.value)} placeholder="fal_..." />
+            <Button variant="outline" size="icon" onClick={() => setShowKey(!showKey)}>
+              {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+
+        <Button onClick={buildManifest} className="w-full" size="lg">
+          Gerar manifesto
+        </Button>
+      </Card>
+
+      {/* STEP 2 */}
+      {manifest && (
+        <Card className="space-y-4 p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">2. Revisão das cenas ({manifest.total_scenes})</h2>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">Seed {manifest.seed}</Badge>
+              <Button variant="outline" size="sm" onClick={downloadManifest}>
+                <Download className="mr-1 h-4 w-4" /> Manifesto JSON
+              </Button>
+            </div>
+          </div>
+
+          {validation && !validation.ok && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertTriangle className="mr-2 inline h-4 w-4" />
+              {validation.errors.join(" · ")}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {manifest.scenes.map((s, i) => (
+              <div key={s.scene_id} className={cn(
+                "rounded-lg border border-border p-4 space-y-3",
+                s.status === "done" && "border-emerald-500/40 bg-emerald-500/5",
+                s.status === "error" && "border-destructive/40 bg-destructive/5",
+                s.status === "generating" && "border-primary/40 bg-primary/5",
+              )}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge>{s.scene_id}</Badge>
+                    <span className="text-xs text-muted-foreground">{s.start_time}–{s.end_time} · {s.duration_seconds}s</span>
+                    {s.status === "done" && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                    {s.status === "generating" && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                    {s.status === "error" && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                  </div>
+                  {manifest.scenes.some((sc) => sc.status === "done" || sc.status === "error") && (
+                    <Button size="sm" variant="outline" disabled={busyScene === i || generating}
+                      onClick={() => regenOne(i)}>
+                      {busyScene === i ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                      <span className="ml-1">Regerar</span>
+                    </Button>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Fala desta cena (dialogue_chunk)</Label>
+                  <Textarea rows={2} value={s.dialogue_chunk}
+                    onChange={(e) => updateScene(i, { dialogue_chunk: e.target.value })} />
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Ação visual</Label>
+                    <Input value={s.visual_action} onChange={(e) => updateScene(i, { visual_action: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Emoção</Label>
+                    <Input value={s.emotion} onChange={(e) => updateScene(i, { emotion: e.target.value })} />
+                  </div>
+                </div>
+
+                {s.error && <p className="text-xs text-destructive">{s.error}</p>}
+
+                {s.final_url && (
+                  <video src={s.final_url} controls className="w-full max-w-md rounded" />
+                )}
+              </div>
+            ))}
+          </div>
+
+          <Button onClick={generateAll} disabled={generating || (validation && !validation.ok)} size="lg" className="w-full">
+            {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
+            Gerar vídeo sequencial
+          </Button>
+          {progress && <p className="text-center text-sm text-muted-foreground">{progress}</p>}
+        </Card>
+      )}
+
+      {/* STEP 3 */}
+      {mergedUrl && (
+        <Card className="space-y-3 p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">3. Vídeo final</h2>
+            <Button asChild variant="outline" size="sm">
+              <a href={mergedUrl} download target="_blank" rel="noreferrer">
+                <Download className="mr-1 h-4 w-4" /> Baixar
+              </a>
+            </Button>
+          </div>
+          <video src={mergedUrl} controls autoPlay className="w-full rounded-lg" />
+        </Card>
+      )}
+    </div>
+  );
+}
