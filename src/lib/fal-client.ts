@@ -256,8 +256,8 @@ export async function generateClip(params: {
     },
   });
 
-  const data = result.data as { video?: { url: string }; output?: string };
-  const url = data.video?.url ?? data.output ?? "";
+  const data = result.data as { video?: { url: string }; video_url?: string; output_url?: string; output?: string; url?: string };
+  const url = data.video?.url ?? data.video_url ?? data.output_url ?? data.output ?? data.url ?? "";
   return { url };
 }
 
