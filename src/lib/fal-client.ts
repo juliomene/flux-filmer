@@ -190,6 +190,7 @@ export async function generateClip(params: {
   seed?: number;
   withAudio?: boolean;
   quality?: VideoQuality;
+  modelResolution?: string;
   onProgress?: (msg: string) => void;
 }): Promise<{ url: string }> {
   configureFal(params.apiKey);
@@ -224,6 +225,17 @@ export async function generateClip(params: {
     };
     if (params.image_url) input.image_url = params.image_url;
     if (params.seed) input.seed = params.seed;
+  }
+
+  // xAI Grok Imagine Video — resolução 480p ou 720p
+  if (modelToUse.includes("xai/grok-imagine-video")) {
+    input = {
+      prompt: params.prompt,
+      aspect_ratio: params.aspect_ratio,
+      duration: String(params.duration),
+      resolution: params.modelResolution ?? "480p",
+    };
+    if (params.image_url) input.image_url = params.image_url;
   }
 
   params.onProgress?.("Iniciando geração...");
