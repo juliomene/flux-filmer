@@ -73,10 +73,18 @@ export const IMAGE_MODELS = [
 export type ImageModel = (typeof IMAGE_MODELS)[number];
 
 export const VIDEO_MODELS = [
-  { id: "fal-ai/kling-video/v1.6/standard/text-to-video", id_img: "fal-ai/kling-video/v1.6/standard/image-to-video", name: "Kling 1.6 Standard", provider: "Kling", cost_per_5s: 0.42, cost_per_10s: 0.84, max_duration: 10 },
-  { id: "fal-ai/kling-video/v1.6/pro/text-to-video", id_img: "fal-ai/kling-video/v1.6/pro/image-to-video", name: "Kling 1.6 Pro", provider: "Kling", cost_per_5s: 0.84, cost_per_10s: 1.68, max_duration: 10 },
-  { id: "xai/grok-imagine-video/text-to-video", id_img: "xai/grok-imagine-video/image-to-video", name: "Grok Imagine Video", provider: "xAI", cost_per_5s: 0.25, cost_per_10s: 0.50, max_duration: 10 },
-  { id: "fal-ai/veo3", id_img: "fal-ai/veo3/image-to-video", name: "Google Veo 3", provider: "Google", cost_per_5s: 0.75, cost_per_10s: 1.50, max_duration: 8 },
+  { id: "fal-ai/kling-video/v1.6/standard/text-to-video", id_img: "fal-ai/kling-video/v1.6/standard/image-to-video", name: "Kling 1.6 Standard", provider: "Kling", quality: "480p", speed: "Normal", cost_per_5s: 0.42, cost_per_10s: 0.84, max_duration: 10, has_native_audio: false, note: "" },
+  { id: "fal-ai/kling-video/v1.6/pro/text-to-video", id_img: "fal-ai/kling-video/v1.6/pro/image-to-video", name: "Kling 1.6 Pro", provider: "Kling", quality: "720p", speed: "Normal", cost_per_5s: 0.84, cost_per_10s: 1.68, max_duration: 10, has_native_audio: false, note: "" },
+  { id: "xai/grok-imagine-video/text-to-video", id_img: "xai/grok-imagine-video/image-to-video", name: "Grok Imagine Video", provider: "xAI", quality: "720p", speed: "Normal", cost_per_5s: 0.25, cost_per_10s: 0.50, max_duration: 10, has_native_audio: true, note: "Áudio nativo" },
+  { id: "fal-ai/veo3", id_img: "fal-ai/veo3/image-to-video", name: "Google Veo 3", provider: "Google", quality: "1080p", speed: "Normal", cost_per_5s: 0.75, cost_per_10s: 1.50, max_duration: 8, has_native_audio: true, note: "Áudio nativo · Máxima qualidade" },
+  // ── MiniMax / Hailuo ──
+  { id: "fal-ai/minimax/hailuo-2.3/standard/text-to-video", id_img: "fal-ai/minimax/hailuo-2.3/standard/image-to-video", name: "Hailuo 2.3 Standard", provider: "MiniMax", quality: "768p", speed: "Normal", cost_per_5s: 0.23, cost_per_10s: 0.45, max_duration: 10, has_native_audio: false, note: "Alta consistência visual entre cenas" },
+  { id: "fal-ai/minimax/hailuo-2.3/pro/text-to-video", id_img: "fal-ai/minimax/hailuo-2.3/pro/image-to-video", name: "Hailuo 2.3 Pro", provider: "MiniMax", quality: "1080p", speed: "Normal", cost_per_5s: 0.45, cost_per_10s: 0.90, max_duration: 10, has_native_audio: false, note: "1080p — melhor qualidade MiniMax" },
+  { id: "fal-ai/minimax/hailuo-2.3-fast/standard/text-to-video", id_img: "fal-ai/minimax/hailuo-2.3-fast/standard/image-to-video", name: "Hailuo 2.3 Fast Standard", provider: "MiniMax", quality: "768p", speed: "Rápido", cost_per_5s: 0.18, cost_per_10s: 0.35, max_duration: 10, has_native_audio: false, note: "Versão rápida e econômica" },
+  { id: "fal-ai/minimax/hailuo-2.3-fast/pro/text-to-video", id_img: "fal-ai/minimax/hailuo-2.3-fast/pro/image-to-video", name: "Hailuo 2.3 Fast Pro", provider: "MiniMax", quality: "1080p", speed: "Rápido", cost_per_5s: 0.35, cost_per_10s: 0.70, max_duration: 10, has_native_audio: false, note: "Rápido + 1080p" },
+  // ── ByteDance / Seedance ──
+  { id: "bytedance/seedance-2.0/fast/text-to-video", id_img: "bytedance/seedance-2.0/fast/image-to-video", name: "Seedance 2.0 Fast", provider: "ByteDance", quality: "720p", speed: "Rápido", cost_per_5s: 1.21, cost_per_10s: 2.42, max_duration: 15, has_native_audio: true, note: "Áudio nativo sincronizado · Física real · Câmera cinemática" },
+  { id: "bytedance/seedance-2.0/text-to-video", id_img: "bytedance/seedance-2.0/image-to-video", name: "Seedance 2.0 Pro", provider: "ByteDance", quality: "1080p", speed: "Normal", cost_per_5s: 1.52, cost_per_10s: 3.03, max_duration: 15, has_native_audio: true, note: "1080p · Áudio nativo · Máxima qualidade ByteDance" },
 ] as const;
 
 export type VideoModel = (typeof VIDEO_MODELS)[number];
@@ -179,11 +187,13 @@ export async function generateClip(params: {
   duration: number;
   image_url?: string;
   seed?: number;
+  withAudio?: boolean;
+  quality?: VideoQuality;
   onProgress?: (msg: string) => void;
 }): Promise<{ url: string }> {
   configureFal(params.apiKey);
   const modelToUse = params.image_url ? params.modelIdImg : params.modelId;
-  const input: Record<string, unknown> = {
+  let input: Record<string, unknown> = {
     prompt: params.prompt,
     aspect_ratio: params.aspect_ratio,
     duration: String(params.duration),
@@ -191,6 +201,29 @@ export async function generateClip(params: {
   if (params.image_url) input.image_url = params.image_url;
   // Kling aceita seed — fixa consistência visual entre cenas do mesmo projeto.
   if (modelToUse.includes("kling")) input.seed = params.seed ?? 42;
+
+  // Hailuo / MiniMax — parâmetros específicos (duration: 6 ou 10)
+  if (modelToUse.includes("minimax") || modelToUse.includes("hailuo")) {
+    input = {
+      prompt: params.prompt,
+      duration: params.duration <= 6 ? 6 : 10,
+      prompt_optimizer: true,
+    };
+    if (params.image_url) input.image_url = params.image_url;
+  }
+
+  // Seedance 2.0 — resolução, duração até 15s, áudio nativo opcional
+  if (modelToUse.includes("seedance")) {
+    input = {
+      prompt: params.prompt,
+      resolution: params.quality === "pro" ? "1080p" : "720p",
+      duration: String(Math.min(params.duration, 15)),
+      aspect_ratio: params.aspect_ratio,
+      generate_audio: params.withAudio ?? false,
+    };
+    if (params.image_url) input.image_url = params.image_url;
+    if (params.seed) input.seed = params.seed;
+  }
 
   params.onProgress?.("Iniciando geração...");
 
@@ -280,6 +313,9 @@ export async function generateLongVideo(params: {
   const seed = params.projectSeed ?? Math.floor(Math.random() * 100000);
   const modelId = resolveModelQuality(params.modelConfig.id, quality);
   const modelIdImg = resolveModelQuality(params.modelConfig.id_img, quality);
+  const hasNativeAudio = (params.modelConfig as { has_native_audio?: boolean }).has_native_audio === true;
+  const wantsAudio = audioType !== "none";
+  const useNativeAudio = hasNativeAudio && wantsAudio;
 
   const clips: string[] = [];
   // Sequencial para encadear o último frame de cada cena como referência da próxima.
@@ -295,6 +331,8 @@ export async function generateLongVideo(params: {
       duration: params.sceneDuration,
       image_url: lastFrameUrl,
       seed,
+      withAudio: useNativeAudio,
+      quality,
       onProgress: (msg) => params.onSceneProgress?.(i, scenes.length, msg),
     });
     clips.push(clip.url);
@@ -322,7 +360,8 @@ export async function generateLongVideo(params: {
 
   // Áudio opcional
   let audioUrl: string | undefined;
-  if (audioType !== "none" && (audioType === "music" || audioType === "both")) {
+  // Pula stable-audio se o modelo já gerou áudio nativo embutido nos clipes.
+  if (!useNativeAudio && wantsAudio && (audioType === "music" || audioType === "both")) {
     try {
       const audioRes = await fal.subscribe("fal-ai/stable-audio", {
         input: {
