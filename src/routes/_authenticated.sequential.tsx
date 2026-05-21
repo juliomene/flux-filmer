@@ -155,15 +155,15 @@ function SequentialPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
+    <div className="mx-auto max-w-5xl space-y-4 p-4 md:p-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Layers className="h-5 w-5" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Layers className="h-4 w-4" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Vídeo Sequencial</h1>
-          <p className="text-sm text-muted-foreground">
-            Cenas curtas que parecem um vídeo único: mesmo personagem, mesmo cenário, fala dividida sem repetir.
+          <h1 className="text-xl font-bold leading-tight">Vídeo Sequencial</h1>
+          <p className="text-xs text-muted-foreground">
+            Cenas curtas unidas em um vídeo só, com mesma fala e personagem.
           </p>
         </div>
       </div>
