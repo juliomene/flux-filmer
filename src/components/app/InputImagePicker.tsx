@@ -19,8 +19,20 @@ export function InputImagePicker({ value, onChange }: Props) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Sessão expirada");
-      const path = `${user.id}/inputs/${crypto.randomUUID()}-${file.name}`;
-      const { error } = await supabase.storage.from("images").upload(path, file, { upsert: false });
+      // Sanitiza o nome: remove acentos, espaços e caracteres inválidos do Storage
+      const ext = (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const base = file.name
+        .substring(0, file.name.lastIndexOf(".") >= 0 ? file.name.lastIndexOf(".") : file.name.length)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9-_]/g, "-")
+        .replace(/-+/g, "-")
+        .slice(0, 60) || "file";
+      const safeName = `${base}.${ext}`;
+      const path = `${user.id}/inputs/${crypto.randomUUID()}-${safeName}`;
+      const { error } = await supabase.storage
+        .from("images")
+        .upload(path, file, { upsert: false, contentType: file.type || undefined });
       if (error) throw error;
       const url = supabase.storage.from("images").getPublicUrl(path).data.publicUrl;
       onChange(url);
