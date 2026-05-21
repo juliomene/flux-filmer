@@ -10,9 +10,14 @@ export const Route = createFileRoute("/")({
 function IndexRedirect() {
   const navigate = useNavigate();
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      navigate({ to: data.session ? "/chat" : "/auth", replace: true });
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (cancelled) return;
+      navigate({ to: !error && data.user ? "/chat" : "/auth", replace: true });
     });
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
