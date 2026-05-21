@@ -159,18 +159,44 @@ function CreatePage() {
           <Select value={selectedVideoModel} onValueChange={setSelectedVideoModel}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {VIDEO_MODELS.map((m) => (
-                <SelectItem key={m.id} value={m.id}>
-                  {m.name} <span className="text-muted-foreground">· {m.provider} · ${m.cost_per_10s}/10s</span>
-                </SelectItem>
+              {Array.from(new Set(VIDEO_MODELS.map((m) => m.provider))).map((prov) => (
+                <div key={prov}>
+                  <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">── {prov} ──</div>
+                  {VIDEO_MODELS.filter((m) => m.provider === prov).map((m) => {
+                    const mm = m as typeof m & { quality?: string; speed?: string; has_native_audio?: boolean };
+                    return (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                        <span className="text-muted-foreground"> · {mm.quality ?? ""} · ${m.cost_per_10s}/10s</span>
+                        {mm.speed === "Rápido" ? " ⚡" : ""}
+                        {mm.has_native_audio ? " 🎵" : ""}
+                      </SelectItem>
+                    );
+                  })}
+                </div>
               ))}
             </SelectContent>
           </Select>
           <div className="flex flex-wrap gap-2 pt-1">
             <Badge variant="outline">{model.provider}</Badge>
+            {(model as { quality?: string }).quality && (
+              <Badge variant="outline">{(model as { quality?: string }).quality}</Badge>
+            )}
+            {(model as { speed?: string }).speed === "Rápido" && (
+              <Badge variant="outline">⚡ Rápido</Badge>
+            )}
+            {(model as { has_native_audio?: boolean }).has_native_audio && (
+              <Badge variant="outline">🎵 Áudio nativo</Badge>
+            )}
+            {((model as { quality?: string }).quality === "1080p") && (
+              <Badge variant="outline">HD</Badge>
+            )}
             <Badge variant="outline">5s: ${model.cost_per_5s}</Badge>
             <Badge variant="outline">10s: ${model.cost_per_10s}</Badge>
           </div>
+          {(model as { note?: string }).note && (
+            <p className="text-xs text-muted-foreground">{(model as { note?: string }).note}</p>
+          )}
         </div>
 
         <div className="space-y-2">
