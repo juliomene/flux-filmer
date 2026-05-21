@@ -362,7 +362,7 @@ function SequentialPage() {
             ))}
           </div>
 
-          <Button onClick={generateAll} disabled={generating || (validation && !validation.ok)} size="lg" className="w-full">
+          <Button onClick={generateAll} disabled={generating || !!(validation && !validation.ok)} size="lg" className="w-full">
             {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
             Gerar vídeo sequencial
           </Button>
