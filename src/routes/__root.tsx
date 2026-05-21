@@ -116,17 +116,14 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
-    let lastUserId: string | null | undefined;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Only react to real sign-in / sign-out transitions.
-      // TOKEN_REFRESHED, USER_UPDATED, INITIAL_SESSION fire frequently and
-      // would cause an invalidation loop.
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT") return;
-      const uid = session?.user?.id ?? null;
-      if (uid === lastUserId) return;
-      lastUserId = uid;
+    // Only react to explicit SIGNED_OUT (e.g. user clicked logout or token
+    // was fully revoked). SIGNED_IN is handled by hard-redirect in auth.tsx,
+    // and reacting to it here caused an invalidation loop when token refresh
+    // churned. TOKEN_REFRESHED / USER_UPDATED / INITIAL_SESSION are ignored.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event !== "SIGNED_OUT") return;
+      queryClient.clear();
       router.invalidate();
-      queryClient.invalidateQueries();
     });
     return () => subscription.unsubscribe();
   }, [router, queryClient]);
