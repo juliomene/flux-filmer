@@ -569,11 +569,11 @@ function MessageBubble({ m }: { m: Message }) {
   if (m.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-2xl bg-primary px-4 py-2 text-primary-foreground">
+        <div className="max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-primary-foreground shadow-sm">
           {m.attachments?.length > 0 && (
             <div className="mb-2 flex gap-1">
               {m.attachments.map((a, i) => (
-                <img key={i} src={a.url} alt="" className="h-16 w-16 rounded object-cover" />
+                <img key={i} src={a.url} alt="Imagem anexada" className="h-16 w-16 rounded-md object-cover" />
               ))}
             </div>
           )}
@@ -591,9 +591,9 @@ function MessageBubble({ m }: { m: Message }) {
   }
   if (m.result_type === "image" && m.result_url) {
     return (
-      <Card className="overflow-hidden border-border bg-card/50 p-2">
+      <Card className="w-fit max-w-full overflow-hidden border-border bg-card/70 p-2 shadow-sm">
         <a href={m.result_url} target="_blank" rel="noreferrer">
-          <img src={m.result_url} alt="" className="max-h-[60vh] w-auto rounded-md" />
+          <img src={m.result_url} alt="Imagem gerada" className="max-h-[60vh] w-auto rounded-md" />
         </a>
         <div className="mt-2 flex gap-2">
           <Button size="sm" variant="outline" asChild>
@@ -607,8 +607,8 @@ function MessageBubble({ m }: { m: Message }) {
   }
   if (m.result_type === "video" && m.result_url) {
     return (
-      <Card className="overflow-hidden border-border bg-card/50 p-2">
-        <video src={m.result_url} controls className="max-h-[60vh] w-full rounded-md" />
+      <Card className="w-full max-w-2xl overflow-hidden border-border bg-card/70 p-2 shadow-sm">
+        <video src={m.result_url} controls className="max-h-[60vh] w-full rounded-md bg-muted" />
         <div className="mt-2 flex gap-2">
           <Button size="sm" variant="outline" asChild>
             <a href={m.result_url} download target="_blank" rel="noreferrer">
