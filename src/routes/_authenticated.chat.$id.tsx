@@ -11,7 +11,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Send, Settings2, Paperclip, Download, X, Image as ImageIcon, Film } from "lucide-react";
+import {
+  Loader2,
+  Send,
+  Settings2,
+  Paperclip,
+  Download,
+  X,
+  Image as ImageIcon,
+  Film,
+} from "lucide-react";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { ALL_LANGUAGES } from "@/lib/fal-client";
 import { toast } from "sonner";
@@ -211,7 +220,9 @@ function ChatView() {
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             {mode === "video" ? <Film className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
           </span>
-          <span>{mode === "video" ? "Vídeo" : "Imagem"} · {provider === "xai" ? "xAI" : provider}</span>
+          <span>
+            {mode === "video" ? "Vídeo" : "Imagem"} · {provider === "xai" ? "xAI" : provider}
+          </span>
           {mode === "video" && totalScenes > 1 && (
             <span className="text-xs text-muted-foreground">
               {totalScenes} cenas × {cfg.perScene}s = {duration}s
@@ -259,8 +270,8 @@ function ChatView() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-          if (prompt.trim() && !sendMut.isPending)
-            sendMut.mutate({ prompt: prompt.trim(), imageUrl: attachedUrl || undefined });
+            if (prompt.trim() && !sendMut.isPending)
+              sendMut.mutate({ prompt: prompt.trim(), imageUrl: attachedUrl || undefined });
           }}
           className="mx-auto max-w-3xl"
         >
@@ -268,7 +279,11 @@ function ChatView() {
             <div className="mb-2 flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5">
               <img src={attachedUrl} alt="anexo" className="h-10 w-10 rounded object-cover" />
               <span className="flex-1 truncate text-xs text-muted-foreground">{attachedUrl}</span>
-              <button type="button" onClick={() => setAttachedUrl("")} className="text-muted-foreground hover:text-foreground">
+              <button
+                type="button"
+                onClick={() => setAttachedUrl("")}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -304,13 +319,14 @@ function ChatView() {
               type="submit"
               size="icon"
               disabled={!prompt.trim() || sendMut.isPending}
-              className={cn(
-                "text-primary-foreground",
-                prompt.trim() ? "" : "opacity-50",
-              )}
+              className={cn("text-primary-foreground", prompt.trim() ? "" : "opacity-50")}
               style={{ background: "var(--gradient-primary)" }}
             >
-              {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {sendMut.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </form>
@@ -379,7 +395,9 @@ function ConfigPanel({
       <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
         <div>
           <h3 className="text-sm font-semibold">Configurações</h3>
-          <p className="text-xs text-muted-foreground">Ajuste geração, proporção e opções do vídeo.</p>
+          <p className="text-xs text-muted-foreground">
+            Ajuste geração, proporção e opções do vídeo.
+          </p>
         </div>
         <button
           type="button"
@@ -463,20 +481,29 @@ function ConfigPanel({
             <div className="rounded-lg border border-border bg-card/40 p-3">
               <Label className="text-xs">Áudio</Label>
               <div className="mt-1 flex flex-wrap gap-2">
-                {([
-                  { id: "none", label: "Nenhum" },
-                  { id: "music", label: "Música" },
-                  { id: "speech", label: "Fala" },
-                  { id: "both", label: "Ambos" },
-                ] as const).map((a) => (
-                  <Chip key={a.id} active={cfg.audioType === a.id} onClick={() => patch({ audioType: a.id })}>
+                {(
+                  [
+                    { id: "none", label: "Nenhum" },
+                    { id: "music", label: "Música" },
+                    { id: "speech", label: "Fala" },
+                    { id: "both", label: "Ambos" },
+                  ] as const
+                ).map((a) => (
+                  <Chip
+                    key={a.id}
+                    active={cfg.audioType === a.id}
+                    onClick={() => patch({ audioType: a.id })}
+                  >
                     {a.label}
                   </Chip>
                 ))}
               </div>
-              {(cfg.audioType === "speech" || cfg.audioType === "both") && cfg.provider === "kling" && (
-                <p className="mt-1 text-[10px] text-amber-500">⚠️ Kling não gera fala sincronizada. Use xAI ou Veo3.</p>
-              )}
+              {(cfg.audioType === "speech" || cfg.audioType === "both") &&
+                cfg.provider === "kling" && (
+                  <p className="mt-1 text-[10px] text-amber-500">
+                    ⚠️ Kling não gera fala sincronizada. Use xAI ou Veo3.
+                  </p>
+                )}
             </div>
             <div className="rounded-lg border border-border bg-card/40 p-3">
               <Label className="text-xs">Idioma</Label>
@@ -557,7 +584,7 @@ function ConfigPanel({
                   className="mt-2"
                 />
               </div>
-          </div>
+            </div>
           )}
         </div>
       </div>
@@ -573,7 +600,12 @@ function MessageBubble({ m }: { m: Message }) {
           {m.attachments?.length > 0 && (
             <div className="mb-2 flex gap-1">
               {m.attachments.map((a, i) => (
-                <img key={i} src={a.url} alt="Imagem anexada" className="h-16 w-16 rounded-md object-cover" />
+                <img
+                  key={i}
+                  src={a.url}
+                  alt="Imagem anexada"
+                  className="h-16 w-16 rounded-md object-cover"
+                />
               ))}
             </div>
           )}

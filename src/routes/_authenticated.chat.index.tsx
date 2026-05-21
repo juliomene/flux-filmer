@@ -57,7 +57,9 @@ function ChatEmpty() {
             <Sparkles className="h-5 w-5" />
           </div>
           <h1 className="text-xl font-semibold">Comece uma conversa</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Digite um prompt abaixo para criar imagens no chat.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Digite um prompt abaixo para criar imagens no chat.
+          </p>
         </div>
       </div>
       <div className="border-t border-border bg-background/95 p-4 backdrop-blur">

@@ -100,7 +100,8 @@ async function mergeClips(clipUrls: string[], sceneDuration: number): Promise<st
         },
       ],
     });
-    const v = (out.video_url as string | undefined) ?? (out.video as { url?: string } | undefined)?.url;
+    const v =
+      (out.video_url as string | undefined) ?? (out.video as { url?: string } | undefined)?.url;
     return v ?? clipUrls[clipUrls.length - 1];
   } catch {
     return clipUrls[clipUrls.length - 1];
@@ -164,7 +165,11 @@ export const sendChatMessage = createServerFn({ method: "POST" })
     // 2) bump conversation
     await supabase
       .from("chat_conversations" as never)
-      .update({ updated_at: new Date().toISOString(), mode: data.mode, provider: data.provider } as never)
+      .update({
+        updated_at: new Date().toISOString(),
+        mode: data.mode,
+        provider: data.provider,
+      } as never)
       .eq("id", data.conversationId);
 
     // 3) run generation
@@ -294,7 +299,9 @@ export const sendChatMessage = createServerFn({ method: "POST" })
 // ── Rename / delete conversation ────────────────────────────────
 export const renameConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid(), title: z.string().min(1).max(120) }).parse(i))
+  .inputValidator((i) =>
+    z.object({ id: z.string().uuid(), title: z.string().min(1).max(120) }).parse(i),
+  )
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("chat_conversations" as never)

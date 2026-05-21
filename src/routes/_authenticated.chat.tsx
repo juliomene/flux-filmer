@@ -47,7 +47,11 @@ function ChatSidebar() {
         .limit(100);
       if (error) throw error;
       return (data ?? []) as Array<{
-        id: string; title: string; mode: string; provider: string; updated_at: string;
+        id: string;
+        title: string;
+        mode: string;
+        provider: string;
+        updated_at: string;
       }>;
     },
   });
@@ -84,7 +88,12 @@ function ChatSidebar() {
           className="h-10 w-full justify-start rounded-lg text-primary-foreground"
           style={{ background: "var(--gradient-primary)" }}
         >
-          {newConv.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} Nova conversa
+          {newConv.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Plus className="mr-2 h-4 w-4" />
+          )}{" "}
+          Nova conversa
         </Button>
         <div className="relative">
           <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -125,7 +134,11 @@ function ChatSidebar() {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium leading-5">{c.title}</span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {c.mode === "video" ? "Vídeo" : "Imagem"} · {formatDistanceToNow(new Date(c.updated_at), { locale: ptBR, addSuffix: false })}
+                      {c.mode === "video" ? "Vídeo" : "Imagem"} ·{" "}
+                      {formatDistanceToNow(new Date(c.updated_at), {
+                        locale: ptBR,
+                        addSuffix: false,
+                      })}
                     </span>
                   </span>
                 </Link>
@@ -133,7 +146,8 @@ function ChatSidebar() {
                   type="button"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (confirm("Apagar esta conversa e todas as mensagens?")) removeConv.mutate(c.id);
+                    if (confirm("Apagar esta conversa e todas as mensagens?"))
+                      removeConv.mutate(c.id);
                   }}
                   disabled={removeConv.isPending}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-70 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 disabled:pointer-events-none disabled:opacity-40"
