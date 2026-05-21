@@ -158,3 +158,39 @@ function ChatEmpty() {
     </div>
   );
 }
+
+function QuickSettings({
+  cfg,
+  patch,
+}: {
+  cfg: StartConfig;
+  patch: (p: Partial<StartConfig>) => void;
+}) {
+  const chip = (active: boolean) =>
+    cn(
+      "rounded-md px-2.5 py-1 text-xs transition",
+      active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+    );
+
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      <button type="button" onClick={() => patch({ mode: "image", duration: 5 })} className={chip(cfg.mode === "image")}>
+        Imagem
+      </button>
+      <button type="button" onClick={() => patch({ mode: "video" })} className={chip(cfg.mode === "video")}>
+        Vídeo
+      </button>
+      {(["kling", "xai", "sora", "veo3"] as Provider[]).map((p) => (
+        <button key={p} type="button" onClick={() => patch({ provider: p })} className={chip(cfg.provider === p)}>
+          {p === "xai" ? "xAI" : p === "veo3" ? "Veo3" : p[0].toUpperCase() + p.slice(1)}
+        </button>
+      ))}
+      {cfg.mode === "video" &&
+        ([5, 10] as const).map((d) => (
+          <button key={d} type="button" onClick={() => patch({ duration: d, perScene: d })} className={chip(cfg.duration === d)}>
+            {d}s
+          </button>
+        ))}
+    </div>
+  );
+}
