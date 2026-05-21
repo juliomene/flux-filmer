@@ -947,8 +947,55 @@ export async function muxVideoAudio(params: {
   apiKey: string;
   videoUrl: string;
   audioUrl: string;
+  durationSeconds?: number;
 }): Promise<string> {
   configureFal(params.apiKey);
+  // Quando temos uma duração alvo, usamos o compose do ffmpeg para garantir
+  // que o áudio seja CORTADO no fim do vídeo. Sem isso, TTS mais longo que
+  // a cena vaza para a cena seguinte após o concat, causando falas
+  // sobrepostas e ininteligíveis.
+  if (params.durationSeconds && params.durationSeconds > 0) {
+    try {
+      const res = await fal.subscribe("fal-ai/ffmpeg-api/compose", {
+        input: {
+          tracks: [
+            {
+              id: "v1",
+              type: "video",
+              keyframes: [
+                {
+                  url: params.videoUrl,
+                  timestamp: 0,
+                  duration: params.durationSeconds * 1000,
+                },
+              ],
+            },
+            {
+              id: "a1",
+              type: "audio",
+              keyframes: [
+                {
+                  url: params.audioUrl,
+                  timestamp: 0,
+                  duration: params.durationSeconds * 1000,
+                },
+              ],
+            },
+          ],
+        },
+      });
+      const d = res.data as {
+        video_url?: string;
+        output_url?: string;
+        url?: string;
+        video?: { url: string };
+      };
+      const url = d.video?.url ?? d.video_url ?? d.output_url ?? d.url;
+      if (url) return url;
+    } catch {
+      // cai no caminho legado
+    }
+  }
   try {
     const res = await fal.subscribe("fal-ai/ffmpeg-api/merge-audio-video", {
       input: {
@@ -1040,7 +1087,12 @@ async function runSingleScene(
       if (audio) {
         scene.audio_url = audio;
         opts.onProgress?.(`Cena ${scene.order}: sincronizando áudio...`);
-        scene.final_url = await muxVideoAudio({ apiKey, videoUrl: clip.url, audioUrl: audio });
+        scene.final_url = await muxVideoAudio({
+          apiKey,
+          videoUrl: clip.url,
+          audioUrl: audio,
+          durationSeconds: scene.duration_seconds,
+        });
       } else {
         scene.final_url = clip.url;
       }
