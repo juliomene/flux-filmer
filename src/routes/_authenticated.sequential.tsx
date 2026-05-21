@@ -155,24 +155,24 @@ function SequentialPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
+    <div className="mx-auto max-w-5xl space-y-4 p-4 md:p-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Layers className="h-5 w-5" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Layers className="h-4 w-4" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Vídeo Sequencial</h1>
-          <p className="text-sm text-muted-foreground">
-            Cenas curtas que parecem um vídeo único: mesmo personagem, mesmo cenário, fala dividida sem repetir.
+          <h1 className="text-xl font-bold leading-tight">Vídeo Sequencial</h1>
+          <p className="text-xs text-muted-foreground">
+            Cenas curtas unidas em um vídeo só, com mesma fala e personagem.
           </p>
         </div>
       </div>
 
       {/* STEP 1 */}
-      <Card className="space-y-4 p-6">
+      <Card className="space-y-3 p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">1. Inputs</h2>
-          <Badge variant="outline">Passo 1 de 3</Badge>
+          <h2 className="text-sm font-semibold">1. Inputs</h2>
+          <Badge variant="outline" className="text-[10px]">Passo 1 de 3</Badge>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -294,13 +294,13 @@ function SequentialPage() {
 
       {/* STEP 2 */}
       {manifest && (
-        <Card className="space-y-4 p-6">
+        <Card className="space-y-3 p-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">2. Revisão das cenas ({manifest.total_scenes})</h2>
+            <h2 className="text-sm font-semibold">2. Cenas ({manifest.total_scenes})</h2>
             <div className="flex items-center gap-2">
-              <Badge variant="outline">Seed {manifest.seed}</Badge>
+              <Badge variant="outline" className="text-[10px]">Seed {manifest.seed}</Badge>
               <Button variant="outline" size="sm" onClick={downloadManifest}>
-                <Download className="mr-1 h-4 w-4" /> Manifesto JSON
+                <Download className="mr-1 h-3 w-3" /> JSON
               </Button>
             </div>
           </div>
@@ -312,77 +312,123 @@ function SequentialPage() {
             </div>
           )}
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             {manifest.scenes.map((s, i) => (
-              <div key={s.scene_id} className={cn(
-                "rounded-lg border border-border p-4 space-y-3",
-                s.status === "done" && "border-emerald-500/40 bg-emerald-500/5",
-                s.status === "error" && "border-destructive/40 bg-destructive/5",
-                s.status === "generating" && "border-primary/40 bg-primary/5",
-              )}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Badge>{s.scene_id}</Badge>
-                    <span className="text-xs text-muted-foreground">{s.start_time}–{s.end_time} · {s.duration_seconds}s</span>
-                    {s.status === "done" && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
-                    {s.status === "generating" && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-                    {s.status === "error" && <AlertTriangle className="h-4 w-4 text-destructive" />}
-                  </div>
-                  {manifest.scenes.some((sc) => sc.status === "done" || sc.status === "error") && (
-                    <Button size="sm" variant="outline" disabled={busyScene === i || generating}
-                      onClick={() => regenOne(i)}>
-                      {busyScene === i ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      <span className="ml-1">Regerar</span>
-                    </Button>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">Fala desta cena (dialogue_chunk)</Label>
-                  <Textarea rows={2} value={s.dialogue_chunk}
-                    onChange={(e) => updateScene(i, { dialogue_chunk: e.target.value })} />
-                </div>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Ação visual</Label>
-                    <Input value={s.visual_action} onChange={(e) => updateScene(i, { visual_action: e.target.value })} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Emoção</Label>
-                    <Input value={s.emotion} onChange={(e) => updateScene(i, { emotion: e.target.value })} />
-                  </div>
-                </div>
-
-                {s.error && <p className="text-xs text-destructive">{s.error}</p>}
-
-                {s.final_url && (
-                  <video src={s.final_url} controls className="w-full max-w-md rounded" />
-                )}
-              </div>
+              <SceneRow
+                key={s.scene_id}
+                scene={s}
+                index={i}
+                busy={busyScene === i}
+                generating={generating}
+                anyDone={manifest.scenes.some((sc) => sc.status === "done" || sc.status === "error")}
+                onUpdate={(patch) => updateScene(i, patch)}
+                onRegen={() => regenOne(i)}
+              />
             ))}
           </div>
 
-          <Button onClick={generateAll} disabled={generating || !!(validation && !validation.ok)} size="lg" className="w-full">
+          <Button onClick={generateAll} disabled={generating || !!(validation && !validation.ok)} className="w-full">
             {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
             Gerar vídeo sequencial
           </Button>
-          {progress && <p className="text-center text-sm text-muted-foreground">{progress}</p>}
+          {progress && <p className="text-center text-xs text-muted-foreground">{progress}</p>}
         </Card>
       )}
 
       {/* STEP 3 */}
       {mergedUrl && (
-        <Card className="space-y-3 p-6">
+        <Card className="space-y-2 p-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">3. Vídeo final</h2>
+            <h2 className="text-sm font-semibold">3. Vídeo final</h2>
             <Button asChild variant="outline" size="sm">
               <a href={mergedUrl} download target="_blank" rel="noreferrer">
-                <Download className="mr-1 h-4 w-4" /> Baixar
+                <Download className="mr-1 h-3 w-3" /> Baixar MP4
               </a>
             </Button>
           </div>
-          <video src={mergedUrl} controls autoPlay className="w-full rounded-lg" />
+          <div className="mx-auto max-w-sm">
+            <video src={mergedUrl} controls autoPlay className="w-full rounded-lg" />
+          </div>
         </Card>
+      )}
+    </div>
+  );
+}
+
+function SceneRow({
+  scene: s,
+  index: i,
+  busy,
+  generating,
+  anyDone,
+  onUpdate,
+  onRegen,
+}: {
+  scene: Scene;
+  index: number;
+  busy: boolean;
+  generating: boolean;
+  anyDone: boolean;
+  onUpdate: (patch: Partial<Scene>) => void;
+  onRegen: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={cn(
+      "rounded-md border border-border",
+      s.status === "done" && "border-emerald-500/40 bg-emerald-500/5",
+      s.status === "error" && "border-destructive/40 bg-destructive/5",
+      s.status === "generating" && "border-primary/40 bg-primary/5",
+    )}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <Badge variant="secondary" className="text-[10px]">{s.scene_id}</Badge>
+          <span className="text-[11px] text-muted-foreground shrink-0">{s.start_time}–{s.end_time} · {s.duration_seconds}s</span>
+          <span className="truncate text-xs text-foreground/80">{s.dialogue_chunk}</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {s.status === "done" && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+          {s.status === "generating" && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+          {s.status === "error" && <AlertTriangle className="h-4 w-4 text-destructive" />}
+          <span className="text-[10px] text-muted-foreground">{open ? "fechar" : "editar"}</span>
+        </div>
+      </button>
+
+      {open && (
+        <div className="space-y-2 border-t border-border/60 px-3 py-3">
+          <div className="space-y-1">
+            <Label className="text-[11px]">Fala (dialogue_chunk)</Label>
+            <Textarea rows={2} className="text-xs" value={s.dialogue_chunk}
+              onChange={(e) => onUpdate({ dialogue_chunk: e.target.value })} />
+          </div>
+          <div className="grid gap-2 md:grid-cols-2">
+            <div className="space-y-1">
+              <Label className="text-[11px]">Ação visual</Label>
+              <Input className="h-8 text-xs" value={s.visual_action} onChange={(e) => onUpdate({ visual_action: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[11px]">Emoção</Label>
+              <Input className="h-8 text-xs" value={s.emotion} onChange={(e) => onUpdate({ emotion: e.target.value })} />
+            </div>
+          </div>
+
+          {s.error && <p className="text-[11px] text-destructive">{s.error}</p>}
+
+          {s.final_url && (
+            <video src={s.final_url} controls className="w-full max-w-[200px] rounded" />
+          )}
+
+          {anyDone && (
+            <Button size="sm" variant="outline" disabled={busy || generating} onClick={onRegen}>
+              {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              <span className="ml-1 text-xs">Regerar cena</span>
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );
