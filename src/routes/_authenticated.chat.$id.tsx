@@ -16,6 +16,14 @@ import { sendChatMessage } from "@/lib/chat.functions";
 import { ALL_LANGUAGES } from "@/lib/fal-client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/chat/$id")({
   component: ChatView,
@@ -117,21 +125,29 @@ function ChatView() {
     setCfg((c) => ({ ...c, overlay: { ...c.overlay, ...p } }));
 
   // Hydrate config from conversation
-  useQuery({
-    queryKey: ["chat-conv-meta", conversationId],
-    queryFn: async () => {
+  // Hydrate config from conversation — ONCE per conversation id, otherwise
+  // every refetch overrides the user's selections (caused the "config keeps
+  // resetting" bug where chat only worked right after Nova conversa).
+  const hydratedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (hydratedRef.current === conversationId) return;
+    hydratedRef.current = conversationId;
+    let cancelled = false;
+    (async () => {
       const { data } = await supabase
         .from("chat_conversations" as never)
         .select("mode,provider")
         .eq("id", conversationId)
         .single();
       const row = data as { mode: Mode; provider: Provider } | null;
-      if (row) {
+      if (!cancelled && row) {
         setCfg((c) => ({ ...c, mode: row.mode, provider: row.provider }));
       }
-      return row;
-    },
-  });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId]);
 
   const messages = useQuery({
     queryKey: ["chat-messages", conversationId],
@@ -191,15 +207,20 @@ function ChatView() {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col">
       <header className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h2 className="text-sm font-medium">
+        <h2 className="flex items-center gap-2 text-sm font-medium">
           {mode === "video" ? "🎬 Vídeo" : "🖼️ Imagem"} · {provider}
           {mode === "video" && totalScenes > 1 && (
-            <span className="ml-2 text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {totalScenes} cenas × {cfg.perScene}s = {duration}s
             </span>
           )}
         </h2>
-        <span className="text-xs text-muted-foreground">Config no botão ⚙️ abaixo</span>
+        <button
+          onClick={() => setShowConfig((s) => !s)}
+          className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <Settings2 className="h-3.5 w-3.5" /> Configurações
+        </button>
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
@@ -350,8 +371,18 @@ function ConfigPanel({
   return (
     <div
       ref={ref}
-      className="absolute bottom-full left-1/2 z-30 mb-2 w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-xl"
+      className="absolute bottom-full left-1/2 z-30 mb-2 max-h-[70vh] w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-2xl"
     >
+      <div className="mb-3 flex items-center justify-between border-b border-border pb-2">
+        <h3 className="text-sm font-medium">Configurações</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
       <div className="space-y-4">
         <div>
           <Label className="text-xs">Modo</Label>
@@ -393,28 +424,25 @@ function ConfigPanel({
         {cfg.mode === "video" && (
           <>
             <div>
-              <Label className="text-xs">Duração total</Label>
+              <Label className="text-xs">Duração</Label>
               <div className="mt-1 flex flex-wrap gap-2">
-                {[5, 10, 20, 30, 60, 90].map((d) => (
-                  <Chip key={d} active={cfg.duration === d} onClick={() => patch({ duration: d })}>
-                    {d}s
-                  </Chip>
-                ))}
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs">Por cena</Label>
-              <div className="mt-1 flex gap-2">
                 {[5, 10].map((d) => (
                   <Chip
                     key={d}
-                    active={cfg.perScene === d}
-                    onClick={() => patch({ perScene: d as 5 | 10 })}
+                    active={cfg.duration === d && cfg.perScene === d}
+                    onClick={() => patch({ duration: d, perScene: d as 5 | 10 })}
                   >
                     {d}s
                   </Chip>
                 ))}
               </div>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Para vídeos longos (20s+), use a aba{" "}
+                <Link to="/sequential" className="text-primary underline">
+                  Vídeo Sequencial
+                </Link>
+                .
+              </p>
             </div>
             <div>
               <Label className="text-xs">Proporção</Label>
@@ -446,13 +474,18 @@ function ConfigPanel({
             </div>
             <div>
               <Label className="text-xs">Idioma</Label>
-              <div className="mt-1 flex flex-wrap gap-2">
-                {ALL_LANGUAGES.map((l) => (
-                  <Chip key={l.code} active={cfg.language === l.code} onClick={() => patch({ language: l.code })}>
-                    {l.label}
-                  </Chip>
-                ))}
-              </div>
+              <Select value={cfg.language} onValueChange={(v) => patch({ language: v })}>
+                <SelectTrigger className="mt-1 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {ALL_LANGUAGES.map((l) => (
+                    <SelectItem key={l.code} value={l.code}>
+                      {l.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </>
         )}
