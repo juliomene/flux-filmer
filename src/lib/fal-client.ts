@@ -346,6 +346,7 @@ export async function generateLongVideo(params: {
       seed,
       withAudio: useNativeAudio,
       quality,
+      modelResolution: (params.modelConfig as unknown as { resolution_param?: string }).resolution_param,
       onProgress: (msg) => params.onSceneProgress?.(i, scenes.length, msg),
     });
     clips.push(clip.url);
