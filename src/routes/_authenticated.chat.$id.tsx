@@ -208,15 +208,20 @@ function ChatView() {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col">
       <header className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h2 className="text-sm font-medium">
+        <h2 className="flex items-center gap-2 text-sm font-medium">
           {mode === "video" ? "🎬 Vídeo" : "🖼️ Imagem"} · {provider}
           {mode === "video" && totalScenes > 1 && (
-            <span className="ml-2 text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {totalScenes} cenas × {cfg.perScene}s = {duration}s
             </span>
           )}
         </h2>
-        <span className="text-xs text-muted-foreground">Config no botão ⚙️ abaixo</span>
+        <button
+          onClick={() => setShowConfig((s) => !s)}
+          className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <Settings2 className="h-3.5 w-3.5" /> Configurações
+        </button>
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
@@ -367,8 +372,18 @@ function ConfigPanel({
   return (
     <div
       ref={ref}
-      className="absolute bottom-full left-1/2 z-30 mb-2 w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-xl"
+      className="absolute bottom-full left-1/2 z-30 mb-2 max-h-[70vh] w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-2xl"
     >
+      <div className="mb-3 flex items-center justify-between border-b border-border pb-2">
+        <h3 className="text-sm font-medium">Configurações</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
       <div className="space-y-4">
         <div>
           <Label className="text-xs">Modo</Label>
