@@ -308,6 +308,12 @@ export const deleteConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    const { error: msgError } = await context.supabase
+      .from("chat_messages" as never)
+      .delete()
+      .eq("conversation_id", data.id);
+    if (msgError) throw new Error(msgError.message);
+
     const { error } = await context.supabase
       .from("chat_conversations" as never)
       .delete()
