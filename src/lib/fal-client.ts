@@ -584,15 +584,14 @@ export async function extractLastFrame(params: {
 }): Promise<string | undefined> {
   configureFal(params.apiKey);
   try {
-    const frame = await fal.subscribe("fal-ai/ffmpeg-api", {
+    const frame = await fal.subscribe("fal-ai/ffmpeg-api/extract-frame", {
       input: {
-        function: "extract_frame",
-        input_url: params.videoUrl,
-        timestamp: Math.max(0, params.durationSeconds - 0.3),
+        video_url: params.videoUrl,
+        frame_type: "last",
       },
     });
-    const fd = frame.data as { image_url?: string; url?: string; image?: { url: string } };
-    return fd.image_url ?? fd.url ?? fd.image?.url;
+    const fd = frame.data as { images?: { url: string }[]; image_url?: string; url?: string; image?: { url: string } };
+    return fd.images?.[0]?.url ?? fd.image_url ?? fd.url ?? fd.image?.url;
   } catch {
     return undefined;
   }
@@ -627,16 +626,14 @@ export async function muxVideoAudio(params: {
 }): Promise<string> {
   configureFal(params.apiKey);
   try {
-    const res = await fal.subscribe("fal-ai/ffmpeg-api", {
+    const res = await fal.subscribe("fal-ai/ffmpeg-api/merge-audio-video", {
       input: {
-        function: "mux_audio",
         video_url: params.videoUrl,
         audio_url: params.audioUrl,
-        output_format: "mp4",
       },
     });
-    const d = res.data as { video_url?: string; output_url?: string; url?: string };
-    return d.video_url ?? d.output_url ?? d.url ?? params.videoUrl;
+    const d = res.data as { video?: { url: string }; video_url?: string; output_url?: string; url?: string };
+    return d.video?.url ?? d.video_url ?? d.output_url ?? d.url ?? params.videoUrl;
   } catch {
     return params.videoUrl;
   }
