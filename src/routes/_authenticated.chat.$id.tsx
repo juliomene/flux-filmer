@@ -410,28 +410,25 @@ function ConfigPanel({
         {cfg.mode === "video" && (
           <>
             <div>
-              <Label className="text-xs">Duração total</Label>
+              <Label className="text-xs">Duração</Label>
               <div className="mt-1 flex flex-wrap gap-2">
-                {[5, 10, 20, 30, 60, 90].map((d) => (
-                  <Chip key={d} active={cfg.duration === d} onClick={() => patch({ duration: d })}>
-                    {d}s
-                  </Chip>
-                ))}
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs">Por cena</Label>
-              <div className="mt-1 flex gap-2">
                 {[5, 10].map((d) => (
                   <Chip
                     key={d}
-                    active={cfg.perScene === d}
-                    onClick={() => patch({ perScene: d as 5 | 10 })}
+                    active={cfg.duration === d && cfg.perScene === d}
+                    onClick={() => patch({ duration: d, perScene: d as 5 | 10 })}
                   >
                     {d}s
                   </Chip>
                 ))}
               </div>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Para vídeos longos (20s+), use a aba{" "}
+                <Link to="/sequential" className="text-primary underline">
+                  Vídeo Sequencial
+                </Link>
+                .
+              </p>
             </div>
             <div>
               <Label className="text-xs">Proporção</Label>
@@ -463,13 +460,18 @@ function ConfigPanel({
             </div>
             <div>
               <Label className="text-xs">Idioma</Label>
-              <div className="mt-1 flex flex-wrap gap-2">
-                {ALL_LANGUAGES.map((l) => (
-                  <Chip key={l.code} active={cfg.language === l.code} onClick={() => patch({ language: l.code })}>
-                    {l.label}
-                  </Chip>
-                ))}
-              </div>
+              <Select value={cfg.language} onValueChange={(v) => patch({ language: v })}>
+                <SelectTrigger className="mt-1 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {ALL_LANGUAGES.map((l) => (
+                    <SelectItem key={l.code} value={l.code}>
+                      {l.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </>
         )}
