@@ -136,8 +136,12 @@ function CreatePage() {
 
       return { url: finalUrl, clips };
     },
-    onSuccess: () => {
-      toast.success("Vídeo pronto");
+    onSuccess: (data) => {
+      if (data.url) {
+        toast.success("Vídeo final unido pronto");
+      } else {
+        toast.error("As cenas foram geradas, mas o merge em MP4 único falhou na fal.ai.");
+      }
       setProgressMsg("");
       qc.invalidateQueries({ queryKey: ["videos-history"] });
     },
@@ -424,7 +428,7 @@ function CreatePage() {
               <video src={mutation.data.url} controls autoPlay className="w-full rounded-md bg-black" />
               <Button asChild variant="outline" size="sm">
                 <a href={mutation.data.url} target="_blank" rel="noreferrer" download>
-                  <Download className="mr-2 h-4 w-4" /> Baixar MP4
+                  <Download className="mr-2 h-4 w-4" /> Baixar MP4 unido
                 </a>
               </Button>
             </>
