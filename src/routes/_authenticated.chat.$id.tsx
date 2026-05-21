@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, Send, Settings2, Paperclip, Download, X } from "lucide-react";
 import { sendChatMessage } from "@/lib/chat.functions";
+import { LANGUAGES } from "@/lib/fal-client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -425,9 +426,33 @@ function ConfigPanel({
                 ))}
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <Label className="text-xs">Áudio IA</Label>
-              <Switch checked={cfg.audio} onCheckedChange={(v) => patch({ audio: v })} />
+            <div>
+              <Label className="text-xs">Áudio</Label>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {([
+                  { id: "none", label: "Nenhum" },
+                  { id: "music", label: "Música" },
+                  { id: "speech", label: "Fala" },
+                  { id: "both", label: "Ambos" },
+                ] as const).map((a) => (
+                  <Chip key={a.id} active={cfg.audioType === a.id} onClick={() => patch({ audioType: a.id })}>
+                    {a.label}
+                  </Chip>
+                ))}
+              </div>
+              {(cfg.audioType === "speech" || cfg.audioType === "both") && cfg.provider === "kling" && (
+                <p className="mt-1 text-[10px] text-amber-500">⚠️ Kling não gera fala sincronizada. Use xAI ou Veo3.</p>
+              )}
+            </div>
+            <div>
+              <Label className="text-xs">Idioma</Label>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {LANGUAGES.map((l) => (
+                  <Chip key={l.code} active={cfg.language === l.code} onClick={() => patch({ language: l.code })}>
+                    {l.label}
+                  </Chip>
+                ))}
+              </div>
             </div>
           </>
         )}
