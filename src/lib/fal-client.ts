@@ -4,6 +4,25 @@ export function configureFal(apiKey: string) {
   fal.config({ credentials: apiKey });
 }
 
+// ── Idiomas suportados ──────────────────────────────────────────
+export const LANGUAGES = [
+  { code: "Portuguese", label: "🇧🇷 Português" },
+  { code: "English",    label: "🇺🇸 English" },
+  { code: "Spanish",    label: "🇪🇸 Español" },
+  { code: "French",     label: "🇫🇷 Français" },
+  { code: "Italian",    label: "🇮🇹 Italiano" },
+  { code: "German",     label: "🇩🇪 Deutsch" },
+  { code: "Japanese",   label: "🇯🇵 日本語" },
+  { code: "Chinese",    label: "🇨🇳 中文" },
+  { code: "Arabic",     label: "🇸🇦 العربية" },
+] as const;
+
+// Sobe um arquivo para o CDN da fal.ai (URL permanente reutilizável).
+export async function uploadToFal(apiKey: string, file: File): Promise<string> {
+  configureFal(apiKey);
+  return await fal.storage.upload(file);
+}
+
 export const IMAGE_MODELS = [
   { id: "fal-ai/flux/schnell", name: "Flux Schnell", provider: "fal.ai", speed: "Rápido", cost_per_image: "$0.003", supports_image_input: false },
   { id: "fal-ai/flux-pro/v1.1", name: "Flux Pro 1.1", provider: "fal.ai", speed: "Médio", cost_per_image: "$0.04", supports_image_input: false },
