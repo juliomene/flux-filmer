@@ -332,6 +332,13 @@ function extractSharedVisualContext(prompt: string): string {
   return withoutDialogue || "same subject, same wardrobe, same environment and same camera setup described by the user";
 }
 
+function extractDialogueText(sceneBlock: string): string {
+  const quoted = [...sceneBlock.matchAll(/[“"]([^”"]{2,})[”"]/g)].map((m) => m[1].trim()).filter(Boolean);
+  if (quoted.length) return quoted.join(" ");
+  const dialogueMatch = sceneBlock.match(/(?:di[aá]logo|dialogue|fala|narra[cç][aã]o)\s*\([^)]*\)?\s*:\s*([\s\S]*)/i);
+  return (dialogueMatch?.[1] ?? sceneBlock).trim();
+}
+
 // CONSISTÊNCIA ENTRE CENAS:
 // 1. Cada prompt de cena inclui a âncora visual do prompt original
 // 2. A partir da cena 2, usa o último frame da cena anterior como image_url
