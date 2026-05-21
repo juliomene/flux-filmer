@@ -146,11 +146,12 @@ function ChatSidebar() {
                   type="button"
                   onClick={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     if (confirm("Apagar esta conversa e todas as mensagens?"))
                       removeConv.mutate(c.id);
                   }}
                   disabled={removeConv.isPending}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-70 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 disabled:pointer-events-none disabled:opacity-40"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-background text-destructive transition hover:bg-destructive/10 disabled:pointer-events-none disabled:opacity-40"
                   aria-label="Excluir"
                   title="Apagar conversa"
                 >
