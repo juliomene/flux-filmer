@@ -254,7 +254,7 @@ function CreatePage() {
 
         <div className="space-y-1 rounded-md border border-border bg-muted/30 p-3 text-sm">
           <div>{sceneCount} cena{sceneCount > 1 ? "s" : ""} × ${perScene.toFixed(2)} = <span className="font-medium">${videoCost.toFixed(2)}</span></div>
-          {withAudio && <div>Áudio {totalDuration}s = <span className="font-medium">${audioCost.toFixed(2)}</span></div>}
+          {audioType !== "none" && <div>Áudio {totalDuration}s = <span className="font-medium">${audioCost.toFixed(2)}</span></div>}
           <div className="border-t border-border/60 pt-1">Total estimado ≈ <span className="font-semibold">${totalCost}</span></div>
         </div>
 
@@ -271,19 +271,59 @@ function CreatePage() {
 
         <InputImagePicker value={inputImage} onChange={setInputImage} />
 
-        <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
-          <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-2"><Music className="h-4 w-4" /> Áudio IA</Label>
-            <Switch checked={withAudio} onCheckedChange={setWithAudio} />
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2"><Languages className="h-4 w-4" /> Idioma do vídeo</Label>
+          <Select value={language} onValueChange={setLanguage}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((l) => <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">Aplicado a texto e fala dentro do vídeo.</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Estilo visual</Label>
+          <div className="flex flex-wrap gap-2">
+            {["cinematic", "anime", "documentary", "vintage", "neon", "realistic"].map((s) => (
+              <button key={s} type="button" onClick={() => setStyle(s)}
+                className={cn("rounded-full border px-3 py-1 text-xs transition",
+                  style === s ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted")}>
+                {s}
+              </button>
+            ))}
           </div>
-          {withAudio && (
+        </div>
+
+        <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
+          <Label className="flex items-center gap-2"><Music className="h-4 w-4" /> Áudio</Label>
+          <div className="flex flex-wrap gap-2">
+            {([
+              { id: "none", label: "Nenhum" },
+              { id: "music", label: "Música" },
+              { id: "speech", label: "Fala nativa" },
+              { id: "both", label: "Música + Fala" },
+            ] as const).map((a) => (
+              <button key={a.id} type="button" onClick={() => setAudioType(a.id)}
+                className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                  audioType === a.id ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted")}>
+                {a.label}
+              </button>
+            ))}
+          </div>
+          {(audioType === "music" || audioType === "both") && (
             <Input
-              placeholder={`música ambiente cinematográfica para: ${prompt || "..."}`}
+              placeholder={`música ambiente para: ${prompt || "..."}`}
               value={audioPrompt}
               onChange={(e) => setAudioPrompt(e.target.value)}
             />
           )}
+          {klingSpeechWarning && (
+            <p className="text-xs text-amber-500">{klingSpeechWarning}</p>
+          )}
         </div>
+
+        <OverlayQuickPicker overlays={overlays} setOverlays={setOverlays} />
 
         <div className="space-y-2">
           <Label>API Key fal.ai</Label>
