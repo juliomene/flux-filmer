@@ -49,7 +49,7 @@ function CreatePage() {
   const [videoQuality, setVideoQuality] = useState<"standard" | "pro">("standard");
   const [overlays, setOverlays] = useState<OverlayItem[]>([]);
 
-  const model = VIDEO_MODELS.find((m) => m.id === selectedVideoModel) ?? VIDEO_MODELS[0];
+  const model = VIDEO_MODELS.find((m) => `${m.id}__${m.quality}` === selectedVideoModel) ?? VIDEO_MODELS.find((m) => m.id === selectedVideoModel) ?? VIDEO_MODELS[0];
   const effSceneDur = Math.min(sceneDuration, model.max_duration) as 5 | 10;
   const sceneCount = Math.max(1, Math.ceil(totalDuration / effSceneDur));
   const qMult = VIDEO_QUALITIES.find((q) => q.id === videoQuality)?.price_multiplier ?? 1;
@@ -159,13 +159,14 @@ function CreatePage() {
           <Select value={selectedVideoModel} onValueChange={setSelectedVideoModel}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {Array.from(new Set(VIDEO_MODELS.map((m) => m.provider))).map((prov) => (
+            {Array.from(new Set(VIDEO_MODELS.map((m) => m.provider))).map((prov) => (
                 <SelectGroup key={prov}>
                   <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">── {prov} ──</SelectLabel>
                   {VIDEO_MODELS.filter((m) => m.provider === prov).map((m) => {
                     const mm = m as typeof m & { quality?: string; speed?: string; has_native_audio?: boolean };
+                    const value = `${m.id}__${m.quality}`;
                     return (
-                      <SelectItem key={m.id} value={m.id}>
+                      <SelectItem key={value} value={value}>
                         {m.name}
                         <span className="text-muted-foreground"> · {mm.quality ?? ""} · ${m.cost_per_10s}/10s</span>
                         {mm.speed === "Rápido" ? " ⚡" : ""}

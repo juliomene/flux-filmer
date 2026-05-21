@@ -75,7 +75,8 @@ export type ImageModel = (typeof IMAGE_MODELS)[number];
 export const VIDEO_MODELS = [
   { id: "fal-ai/kling-video/v1.6/standard/text-to-video", id_img: "fal-ai/kling-video/v1.6/standard/image-to-video", name: "Kling 1.6 Standard", provider: "Kling", quality: "480p", speed: "Normal", cost_per_5s: 0.42, cost_per_10s: 0.84, max_duration: 10, has_native_audio: false, note: "" },
   { id: "fal-ai/kling-video/v1.6/pro/text-to-video", id_img: "fal-ai/kling-video/v1.6/pro/image-to-video", name: "Kling 1.6 Pro", provider: "Kling", quality: "720p", speed: "Normal", cost_per_5s: 0.84, cost_per_10s: 1.68, max_duration: 10, has_native_audio: false, note: "" },
-  { id: "xai/grok-imagine-video/text-to-video", id_img: "xai/grok-imagine-video/image-to-video", name: "Grok Imagine Video", provider: "xAI", quality: "720p", speed: "Normal", cost_per_5s: 0.25, cost_per_10s: 0.50, max_duration: 10, has_native_audio: true, note: "Áudio nativo" },
+  { id: "xai/grok-imagine-video/text-to-video", id_img: "xai/grok-imagine-video/image-to-video", name: "Grok Imagine Video 480p", provider: "xAI", quality: "480p", speed: "Rápido", cost_per_5s: 0.25, cost_per_10s: 0.50, max_duration: 10, has_native_audio: true, resolution_param: "480p", note: "Mais rápido e econômico · Áudio nativo" },
+  { id: "xai/grok-imagine-video/text-to-video", id_img: "xai/grok-imagine-video/image-to-video", name: "Grok Imagine Video 720p", provider: "xAI", quality: "720p", speed: "Normal", cost_per_5s: 0.50, cost_per_10s: 1.00, max_duration: 10, has_native_audio: true, resolution_param: "720p", note: "Alta qualidade · Áudio nativo sincronizado" },
   { id: "fal-ai/veo3", id_img: "fal-ai/veo3/image-to-video", name: "Google Veo 3", provider: "Google", quality: "1080p", speed: "Normal", cost_per_5s: 0.75, cost_per_10s: 1.50, max_duration: 8, has_native_audio: true, note: "Áudio nativo · Máxima qualidade" },
   // ── MiniMax / Hailuo ──
   { id: "fal-ai/minimax/hailuo-2.3/standard/text-to-video", id_img: "fal-ai/minimax/hailuo-2.3/standard/image-to-video", name: "Hailuo 2.3 Standard", provider: "MiniMax", quality: "768p", speed: "Normal", cost_per_5s: 0.23, cost_per_10s: 0.45, max_duration: 10, has_native_audio: false, note: "Alta consistência visual entre cenas" },
@@ -189,6 +190,7 @@ export async function generateClip(params: {
   seed?: number;
   withAudio?: boolean;
   quality?: VideoQuality;
+  modelResolution?: string;
   onProgress?: (msg: string) => void;
 }): Promise<{ url: string }> {
   configureFal(params.apiKey);
@@ -223,6 +225,17 @@ export async function generateClip(params: {
     };
     if (params.image_url) input.image_url = params.image_url;
     if (params.seed) input.seed = params.seed;
+  }
+
+  // xAI Grok Imagine Video — resolução 480p ou 720p
+  if (modelToUse.includes("xai/grok-imagine-video")) {
+    input = {
+      prompt: params.prompt,
+      aspect_ratio: params.aspect_ratio,
+      duration: String(params.duration),
+      resolution: params.modelResolution ?? "480p",
+    };
+    if (params.image_url) input.image_url = params.image_url;
   }
 
   params.onProgress?.("Iniciando geração...");
@@ -333,6 +346,7 @@ export async function generateLongVideo(params: {
       seed,
       withAudio: useNativeAudio,
       quality,
+      modelResolution: (params.modelConfig as unknown as { resolution_param?: string }).resolution_param,
       onProgress: (msg) => params.onSceneProgress?.(i, scenes.length, msg),
     });
     clips.push(clip.url);
