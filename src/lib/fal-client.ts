@@ -46,6 +46,18 @@ export const IMAGE_QUALITIES = [
   { id: "2k", label: "2K — Alta", description: "Melhor qualidade, +50% custo", multiplier: 1.5 },
 ] as const;
 
+export const VIDEO_QUALITIES = [
+  { id: "standard", label: "Standard", description: "480p — mais rápido e econômico", price_multiplier: 1 },
+  { id: "pro", label: "Pro", description: "720p — melhor qualidade", price_multiplier: 2 },
+] as const;
+
+export type VideoQuality = (typeof VIDEO_QUALITIES)[number]["id"];
+
+// Troca segmento "standard"/"pro" no model id (suportado por Kling).
+export function resolveModelQuality(modelId: string, quality: VideoQuality): string {
+  return modelId.replace(/\/(standard|pro)\//, `/${quality}/`);
+}
+
 export async function generateImage(params: {
   apiKey: string;
   modelId: string;
@@ -109,6 +121,7 @@ export async function generateClip(params: {
   aspect_ratio: string;
   duration: number;
   image_url?: string;
+  seed?: number;
   onProgress?: (msg: string) => void;
 }): Promise<{ url: string }> {
   configureFal(params.apiKey);
@@ -119,6 +132,8 @@ export async function generateClip(params: {
     duration: String(params.duration),
   };
   if (params.image_url) input.image_url = params.image_url;
+  // Kling aceita seed — fixa consistência visual entre cenas do mesmo projeto.
+  if (modelToUse.includes("kling")) input.seed = params.seed ?? 42;
 
   params.onProgress?.("Iniciando geração...");
 
@@ -139,50 +154,84 @@ export async function generateClip(params: {
 
 function splitPromptIntoScenes(prompt: string, n: number): string[] {
   if (n === 1) return [prompt];
-  const progress = ["beginning", "early", "middle", "later", "end"];
+  // Âncora visual: mantida em TODAS as cenas para garantir personagens,
+  // paleta, iluminação e câmera consistentes.
+  const anchor = `Maintain exact same visual style, same characters, same color palette, same lighting, same camera style as established: "${prompt}".`;
+  const transitions = [
+    "Opening establishing shot",
+    "Continuing the scene, same characters",
+    "Moving forward, same setting and characters",
+    "Still in the same environment, same people",
+    "Final shot, same characters and setting",
+  ];
   return Array.from({ length: n }, (_, i) => {
-    const p = progress[Math.min(i, progress.length - 1)];
-    return `Scene ${i + 1} of ${n}, ${p} of the story: ${prompt}. Continuous cinematic style.`;
+    const t = transitions[Math.min(i, transitions.length - 1)];
+    const progress = i === 0 ? "beginning" : i === n - 1 ? "ending" : `middle part ${i} of ${n - 2}`;
+    return `${anchor} ${t}, ${progress} of the story. Cinematic continuity, seamless cut. Original prompt context: ${prompt}`;
   });
 }
 
+// CONSISTÊNCIA ENTRE CENAS:
+// 1. Cada prompt de cena inclui a âncora visual do prompt original
+// 2. A partir da cena 2, usa o último frame da cena anterior como image_url
+// 3. Seed fixo por projeto para modelos que suportam (Kling)
+// 4. Mesmo aspect_ratio e qualidade em todas as cenas
+// 5. Mesmo model id em todas as cenas do mesmo projeto
 export async function generateLongVideo(params: {
   apiKey: string;
   modelConfig: VideoModel;
+  quality?: VideoQuality;
   prompt: string;
   totalDuration: number;
   sceneDuration: number;
   formatId: string;
   image_url?: string;
+  withAudio?: boolean;
+  audioPrompt?: string;
+  projectSeed?: number;
   onSceneProgress?: (done: number, total: number, msg: string) => void;
   onClipReady?: (index: number, url: string) => void;
 }): Promise<{ clips: string[]; merged_url: string | null }> {
   const aspect = ratioToAspect(params.formatId);
   const totalScenes = Math.max(1, Math.ceil(params.totalDuration / params.sceneDuration));
   const scenes = splitPromptIntoScenes(params.prompt, totalScenes);
+  const quality = params.quality ?? "standard";
+  const seed = params.projectSeed ?? Math.floor(Math.random() * 100000);
+  const modelId = resolveModelQuality(params.modelConfig.id, quality);
+  const modelIdImg = resolveModelQuality(params.modelConfig.id_img, quality);
 
   const clips: string[] = [];
-  for (let i = 0; i < scenes.length; i += 3) {
-    const batch = scenes.slice(i, i + 3);
-    params.onSceneProgress?.(i, scenes.length, `Gerando cenas ${i + 1}–${Math.min(i + 3, scenes.length)} de ${scenes.length}...`);
-
-    const results = await Promise.all(
-      batch.map((scene) =>
-        generateClip({
-          apiKey: params.apiKey,
-          modelId: params.modelConfig.id,
-          modelIdImg: params.modelConfig.id_img,
-          prompt: scene,
-          aspect_ratio: aspect,
-          duration: params.sceneDuration,
-          image_url: params.image_url,
-        }),
-      ),
-    );
-    results.forEach((r, j) => {
-      clips.push(r.url);
-      params.onClipReady?.(i + j, r.url);
+  // Sequencial para encadear o último frame de cada cena como referência da próxima.
+  let lastFrameUrl: string | undefined = params.image_url;
+  for (let i = 0; i < scenes.length; i++) {
+    params.onSceneProgress?.(i, scenes.length, `Gerando cena ${i + 1} de ${scenes.length}...`);
+    const clip = await generateClip({
+      apiKey: params.apiKey,
+      modelId,
+      modelIdImg,
+      prompt: scenes[i],
+      aspect_ratio: aspect,
+      duration: params.sceneDuration,
+      image_url: lastFrameUrl,
+      seed,
+      onProgress: (msg) => params.onSceneProgress?.(i, scenes.length, msg),
     });
+    clips.push(clip.url);
+    params.onClipReady?.(i, clip.url);
+
+    // Extrai último frame para continuidade visual da próxima cena
+    if (i < scenes.length - 1) {
+      try {
+        configureFal(params.apiKey);
+        const frame = await fal.subscribe("fal-ai/ffmpeg-api/extract-frame", {
+          input: { video_url: clip.url, frame_type: "last" },
+        });
+        const fd = frame.data as { image?: { url: string }; frame?: { url: string } };
+        lastFrameUrl = fd.image?.url ?? fd.frame?.url ?? lastFrameUrl;
+      } catch {
+        // mantém referência anterior se falhar
+      }
+    }
   }
 
   params.onSceneProgress?.(scenes.length, scenes.length, "Unindo cenas...");
@@ -191,21 +240,45 @@ export async function generateLongVideo(params: {
   if (clips.length > 1) {
     try {
       configureFal(params.apiKey);
-      const mergeResult = await fal.subscribe("fal-ai/ffmpeg-api/compose", {
-        input: {
-          tracks: [
-            {
-              id: "1",
-              type: "video",
-              keyframes: clips.map((url, idx) => ({
-                url,
-                timestamp: idx * params.sceneDuration,
-                duration: params.sceneDuration,
-              })),
+      const mergeInput: Record<string, unknown> = {
+        tracks: [
+          {
+            id: "1",
+            type: "video",
+            keyframes: clips.map((url, idx) => ({
+              url,
+              timestamp: idx * params.sceneDuration,
+              duration: params.sceneDuration,
+            })),
+          },
+        ],
+      };
+
+      // Áudio opcional via stable-audio
+      if (params.withAudio && params.audioPrompt) {
+        try {
+          const audioRes = await fal.subscribe("fal-ai/stable-audio", {
+            input: {
+              prompt: params.audioPrompt,
+              seconds_total: params.totalDuration,
+              steps: 100,
             },
-          ],
-        },
-      });
+          });
+          const ad = audioRes.data as { audio_file?: { url: string } };
+          const audioUrl = ad.audio_file?.url;
+          if (audioUrl) {
+            (mergeInput.tracks as unknown[]).push({
+              id: "audio",
+              type: "audio",
+              keyframes: [{ url: audioUrl, timestamp: 0, duration: params.totalDuration }],
+            });
+          }
+        } catch {
+          // segue sem áudio se falhar
+        }
+      }
+
+      const mergeResult = await fal.subscribe("fal-ai/ffmpeg-api/compose", { input: mergeInput });
       const data = mergeResult.data as { video_url?: string; video?: { url: string } };
       merged_url = data.video_url ?? data.video?.url ?? clips[clips.length - 1];
     } catch {
