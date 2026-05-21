@@ -17,6 +17,44 @@ export const LANGUAGES = [
   { code: "Arabic",     label: "🇸🇦 العربية" },
 ] as const;
 
+// Lista ampliada — todos os idiomas suportados pelos modelos da fal.ai (Kling, Veo, Grok).
+// A IA traduz a copy automaticamente para o idioma escolhido via âncora do prompt.
+export const EXTRA_LANGUAGES = [
+  { code: "Korean",      label: "🇰🇷 한국어" },
+  { code: "Russian",     label: "🇷🇺 Русский" },
+  { code: "Hindi",       label: "🇮🇳 हिन्दी" },
+  { code: "Turkish",     label: "🇹🇷 Türkçe" },
+  { code: "Dutch",       label: "🇳🇱 Nederlands" },
+  { code: "Polish",      label: "🇵🇱 Polski" },
+  { code: "Swedish",     label: "🇸🇪 Svenska" },
+  { code: "Norwegian",   label: "🇳🇴 Norsk" },
+  { code: "Danish",      label: "🇩🇰 Dansk" },
+  { code: "Finnish",     label: "🇫🇮 Suomi" },
+  { code: "Greek",       label: "🇬🇷 Ελληνικά" },
+  { code: "Hebrew",      label: "🇮🇱 עברית" },
+  { code: "Thai",        label: "🇹🇭 ไทย" },
+  { code: "Vietnamese",  label: "🇻🇳 Tiếng Việt" },
+  { code: "Indonesian",  label: "🇮🇩 Bahasa Indonesia" },
+  { code: "Malay",       label: "🇲🇾 Bahasa Melayu" },
+  { code: "Filipino",    label: "🇵🇭 Filipino" },
+  { code: "Ukrainian",   label: "🇺🇦 Українська" },
+  { code: "Czech",       label: "🇨🇿 Čeština" },
+  { code: "Romanian",    label: "🇷🇴 Română" },
+  { code: "Hungarian",   label: "🇭🇺 Magyar" },
+  { code: "Bulgarian",   label: "🇧🇬 Български" },
+  { code: "Croatian",    label: "🇭🇷 Hrvatski" },
+  { code: "Serbian",     label: "🇷🇸 Српски" },
+  { code: "Slovak",      label: "🇸🇰 Slovenčina" },
+  { code: "Catalan",     label: "🏴 Català" },
+  { code: "Persian",     label: "🇮🇷 فارسی" },
+  { code: "Bengali",     label: "🇧🇩 বাংলা" },
+  { code: "Urdu",        label: "🇵🇰 اردو" },
+  { code: "Tamil",       label: "🇮🇳 தமிழ்" },
+  { code: "Swahili",     label: "🇰🇪 Kiswahili" },
+] as const;
+
+export const ALL_LANGUAGES = [...LANGUAGES, ...EXTRA_LANGUAGES] as const;
+
 // Sobe um arquivo para o CDN da fal.ai (URL permanente reutilizável).
 export async function uploadToFal(apiKey: string, file: File): Promise<string> {
   configureFal(apiKey);
@@ -185,7 +223,7 @@ export function buildScenePrompts(params: {
     `IMPORTANT: Keep exact same character appearance, same face, same clothes, same hair throughout all scenes.`,
     `Same lighting style. Same color grading. Same ${style} camera style.`,
     `DO NOT change the character. DO NOT change the setting unless the story requires it.`,
-    `All spoken dialogue, text on screen, and narration must be in ${language}.`,
+    `LANGUAGE RULE: The user prompt may be written in any language, but ALL spoken dialogue, voiceover, narration, captions, signs, and on-screen text in the final video MUST be translated to and rendered exclusively in ${language}. Do not mix languages. Translate any quoted dialogue from the prompt into natural, native-sounding ${language}, preserving meaning, tone and intent.`,
   ].join(" ");
 
   if (totalScenes === 1) return [`${visualAnchor} ${userPrompt}`];
