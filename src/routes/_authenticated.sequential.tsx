@@ -64,13 +64,20 @@ function SequentialPage() {
   const validation = manifest ? validateManifest(manifest) : null;
 
   const buildManifest = () => {
-    if (!prompt.trim() || !script.trim()) {
-      toast.error("Preencha prompt e roteiro completo.");
+    const hasRef = !!(characterRef || environmentRef);
+    if (!script.trim()) {
+      toast.error("Cole o roteiro que o personagem deve falar.");
       return;
     }
+    if (!hasRef && !prompt.trim()) {
+      toast.error("Descreva o personagem/cenário ou envie uma imagem de referência.");
+      return;
+    }
+    const effectivePrompt = prompt.trim()
+      || `Use the reference image as the exact identity of the character and scene. Same person, same face, same clothes, same environment in every shot.`;
     const m = buildLocalManifest({
       title: title || prompt.slice(0, 60),
-      prompt,
+      prompt: effectivePrompt,
       script,
       totalDuration,
       sceneDuration,
@@ -183,10 +190,13 @@ function SequentialPage() {
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs">Prompt visual (descrição base do personagem/cenário)</Label>
+          <Label className="text-xs">
+            Prompt visual
+            <span className="text-muted-foreground font-normal"> — opcional se você enviar uma imagem de referência</span>
+          </Label>
           <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={2}
             className="text-sm"
-            placeholder="Mulher de 30 anos, jaqueta jeans, cozinha clara, gravando vídeo selfie..." />
+            placeholder="Ex: mulher de 30 anos, jaqueta jeans, cozinha clara. (Deixe vazio se a referência já mostra tudo)" />
         </div>
 
         <div className="space-y-1.5">

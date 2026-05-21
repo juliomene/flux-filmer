@@ -1000,9 +1000,16 @@ async function runSingleScene(
   const modelId = resolveModelQuality(modelConfig.id, quality);
   const modelIdImg = resolveModelQuality(modelConfig.id_img, quality);
   const hasNativeAudio = (modelConfig as { has_native_audio?: boolean }).has_native_audio === true;
-  const useNative = scene.audio_mode === "native" && hasNativeAudio;
   const refImage =
     prevLastFrame ?? manifest.character_ref_url ?? manifest.environment_ref_url ?? undefined;
+  // Quando há imagem de referência o pipeline cai em image-to-video, que
+  // costuma NÃO produzir áudio nativo confiável. Nesse caso, forçamos TTS
+  // externo para garantir narração na cena, mesmo que o usuário tenha
+  // escolhido "fala nativa".
+  const usingImageToVideo = !!refImage;
+  const effectiveAudioMode: Scene["audio_mode"] =
+    scene.audio_mode === "native" && usingImageToVideo ? "tts_external" : scene.audio_mode;
+  const useNative = effectiveAudioMode === "native" && hasNativeAudio;
 
   try {
     const clip = await generateClip({
@@ -1022,7 +1029,7 @@ async function runSingleScene(
     scene.clip_url = clip.url;
 
     // TTS externo: gera áudio com o dialogue_chunk e muxa.
-    if (scene.audio_mode === "tts_external") {
+    if (effectiveAudioMode === "tts_external" && scene.dialogue_chunk.trim()) {
       opts.onProgress?.(`Cena ${scene.order}: gerando narração...`);
       const audio = await generateSceneTTS({
         apiKey,
