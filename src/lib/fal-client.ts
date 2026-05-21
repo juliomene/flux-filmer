@@ -263,8 +263,6 @@ export function buildScenePrompts(params: {
 }): string[] {
   const { userPrompt, totalScenes, language, style = "cinematic" } = params;
 
-  // Âncora visual obrigatória em TODAS as cenas — garante personagem, roupas,
-  // rosto, paleta e iluminação consistentes do início ao fim.
   const visualAnchor = [
     `IMPORTANT: Keep exact same character appearance, same face, same clothes, same hair throughout all scenes.`,
     `Same lighting style. Same color grading. Same ${style} camera style.`,
@@ -274,18 +272,17 @@ export function buildScenePrompts(params: {
 
   if (totalScenes === 1) return [`${visualAnchor} ${userPrompt}`];
 
-  const beats = [
-    "Opening shot, establishing the scene",
-    "Continuing action, same character",
-    "Middle of the story, same character progressing",
-    "Climax moment, same character",
-    "Closing shot, same character, resolution",
-  ];
-
-  return Array.from({ length: totalScenes }, (_, i) => {
-    const beat = beats[Math.min(i, beats.length - 1)];
-    return `${visualAnchor} Scene ${i + 1}/${totalScenes}: ${beat}. Story: ${userPrompt}`;
+  // Cenas com beats diferentes — cada índice gera texto distinto garantido.
+  const parts = totalScenes <= 3
+    ? ["beginning of the story", "middle", "end"]
+    : ["beginning of the story", "early development", "middle", "climax", "end"];
+  const prompts = Array.from({ length: totalScenes }, (_, i) => {
+    const part = parts[Math.min(i, parts.length - 1)];
+    return `${visualAnchor} ${userPrompt} — ${part}, scene ${i + 1} of ${totalScenes}, cinematic continuity`;
   });
+  // eslint-disable-next-line no-console
+  console.log("[fal-client] scene prompts:", prompts);
+  return prompts;
 }
 
 // CONSISTÊNCIA ENTRE CENAS:
@@ -331,7 +328,6 @@ export async function generateLongVideo(params: {
   const useNativeAudio = hasNativeAudio && wantsAudio;
 
   const clips: string[] = [];
-  // Sequencial para encadear o último frame de cada cena como referência da próxima.
   let lastFrameUrl: string | undefined = params.image_url;
   for (let i = 0; i < scenes.length; i++) {
     params.onSceneProgress?.(i, scenes.length, `Gerando cena ${i + 1} de ${scenes.length}...`);
@@ -352,8 +348,8 @@ export async function generateLongVideo(params: {
     clips.push(clip.url);
     params.onClipReady?.(i, clip.url);
 
-    // Extrai último frame para continuidade visual da próxima cena
     if (i < scenes.length - 1) {
+      lastFrameUrl = undefined;
       try {
         const frame = await fal.subscribe("fal-ai/ffmpeg-api", {
           input: {
@@ -363,10 +359,12 @@ export async function generateLongVideo(params: {
           },
         });
         const fd = frame.data as { image_url?: string; url?: string; image?: { url: string } };
-        lastFrameUrl = fd.image_url ?? fd.url ?? fd.image?.url ?? lastFrameUrl;
+        lastFrameUrl = fd.image_url ?? fd.url ?? fd.image?.url;
       } catch {
-        // mantém referência anterior se falhar
+        lastFrameUrl = undefined;
       }
+      // eslint-disable-next-line no-console
+      console.log(`[fal-client] cena ${i + 1} concluída. próxima usará referência:`, lastFrameUrl);
     }
   }
 
