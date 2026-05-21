@@ -11,7 +11,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Send, Settings2, Paperclip, Download, X } from "lucide-react";
+import {
+  Loader2,
+  Send,
+  Settings2,
+  Paperclip,
+  Download,
+  X,
+  Image as ImageIcon,
+  Film,
+} from "lucide-react";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { ALL_LANGUAGES } from "@/lib/fal-client";
 import { toast } from "sonner";
@@ -205,10 +214,15 @@ function ChatView() {
   const totalScenes = mode === "video" ? Math.max(1, Math.ceil(duration / cfg.perScene)) : 1;
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
+    <div className="flex h-full min-h-0 flex-1 flex-col bg-background">
+      <header className="flex items-center justify-between border-b border-border bg-background/95 px-5 py-3 backdrop-blur">
         <h2 className="flex items-center gap-2 text-sm font-medium">
-          {mode === "video" ? "🎬 Vídeo" : "🖼️ Imagem"} · {provider}
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            {mode === "video" ? <Film className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+          </span>
+          <span>
+            {mode === "video" ? "Vídeo" : "Imagem"} · {provider === "xai" ? "xAI" : provider}
+          </span>
           {mode === "video" && totalScenes > 1 && (
             <span className="text-xs text-muted-foreground">
               {totalScenes} cenas × {cfg.perScene}s = {duration}s
@@ -217,13 +231,13 @@ function ChatView() {
         </h2>
         <button
           onClick={() => setShowConfig((s) => !s)}
-          className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="flex items-center gap-1.5 rounded-lg border border-border bg-card/50 px-3 py-2 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
         >
           <Settings2 className="h-3.5 w-3.5" /> Configurações
         </button>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-6">
         <div className="mx-auto max-w-3xl space-y-4">
           {messages.isLoading && <Skeleton className="h-20 w-full" />}
           {list.map((m) => (
@@ -244,7 +258,7 @@ function ChatView() {
       </div>
 
       {/* Input */}
-      <div className="relative border-t border-border bg-card/30 p-4 backdrop-blur">
+      <div className="relative border-t border-border bg-background/95 p-4 backdrop-blur">
         {showConfig && (
           <ConfigPanel
             cfg={cfg}
@@ -256,8 +270,8 @@ function ChatView() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-          if (prompt.trim() && !sendMut.isPending)
-            sendMut.mutate({ prompt: prompt.trim(), imageUrl: attachedUrl || undefined });
+            if (prompt.trim() && !sendMut.isPending)
+              sendMut.mutate({ prompt: prompt.trim(), imageUrl: attachedUrl || undefined });
           }}
           className="mx-auto max-w-3xl"
         >
@@ -265,12 +279,16 @@ function ChatView() {
             <div className="mb-2 flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5">
               <img src={attachedUrl} alt="anexo" className="h-10 w-10 rounded object-cover" />
               <span className="flex-1 truncate text-xs text-muted-foreground">{attachedUrl}</span>
-              <button type="button" onClick={() => setAttachedUrl("")} className="text-muted-foreground hover:text-foreground">
+              <button
+                type="button"
+                onClick={() => setAttachedUrl("")}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
-          <div className="flex items-end gap-2 rounded-xl border border-border bg-background p-2">
+          <div className="flex items-end gap-2 rounded-xl border border-border bg-card/60 p-2 shadow-sm">
             <AttachImageButton onAttach={setAttachedUrl} />
             <button
               type="button"
@@ -301,13 +319,14 @@ function ChatView() {
               type="submit"
               size="icon"
               disabled={!prompt.trim() || sendMut.isPending}
-              className={cn(
-                "text-primary-foreground",
-                prompt.trim() ? "" : "opacity-50",
-              )}
+              className={cn("text-primary-foreground", prompt.trim() ? "" : "opacity-50")}
               style={{ background: "var(--gradient-primary)" }}
             >
-              {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {sendMut.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </form>
@@ -371,20 +390,25 @@ function ConfigPanel({
   return (
     <div
       ref={ref}
-      className="absolute bottom-full left-1/2 z-30 mb-2 max-h-[70vh] w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-2xl"
+      className="absolute bottom-full left-1/2 z-30 mb-3 max-h-[70vh] w-[min(680px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-2xl"
     >
-      <div className="mb-3 flex items-center justify-between border-b border-border pb-2">
-        <h3 className="text-sm font-medium">Configurações</h3>
+      <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+        <div>
+          <h3 className="text-sm font-semibold">Configurações</h3>
+          <p className="text-xs text-muted-foreground">
+            Ajuste geração, proporção e opções do vídeo.
+          </p>
+        </div>
         <button
           type="button"
           onClick={onClose}
-          className="text-muted-foreground hover:text-foreground"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
-      <div className="space-y-4">
-        <div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border border-border bg-card/40 p-3">
           <Label className="text-xs">Modo</Label>
           <div className="mt-1 flex gap-2">
             <Chip active={cfg.mode === "image"} onClick={() => patch({ mode: "image" })}>
@@ -396,7 +420,7 @@ function ConfigPanel({
           </div>
         </div>
 
-        <div>
+        <div className="rounded-lg border border-border bg-card/40 p-3">
           <Label className="text-xs">Provedor</Label>
           <div className="mt-1 flex flex-wrap gap-2">
             {(["xai", "kling", "sora", "veo3"] as Provider[]).map((p) => (
@@ -407,7 +431,7 @@ function ConfigPanel({
           </div>
         </div>
 
-        <div>
+        <div className="rounded-lg border border-border bg-card/40 p-3 sm:col-span-2">
           <Label className="text-xs">API Key (fal.ai)</Label>
           <Input
             value={cfg.apiKey}
@@ -423,7 +447,7 @@ function ConfigPanel({
 
         {cfg.mode === "video" && (
           <>
-            <div>
+            <div className="rounded-lg border border-border bg-card/40 p-3">
               <Label className="text-xs">Duração</Label>
               <div className="mt-1 flex flex-wrap gap-2">
                 {[5, 10].map((d) => (
@@ -444,7 +468,7 @@ function ConfigPanel({
                 .
               </p>
             </div>
-            <div>
+            <div className="rounded-lg border border-border bg-card/40 p-3">
               <Label className="text-xs">Proporção</Label>
               <div className="mt-1 flex gap-2">
                 {(["16:9", "9:16", "1:1"] as const).map((a) => (
@@ -454,25 +478,34 @@ function ConfigPanel({
                 ))}
               </div>
             </div>
-            <div>
+            <div className="rounded-lg border border-border bg-card/40 p-3">
               <Label className="text-xs">Áudio</Label>
               <div className="mt-1 flex flex-wrap gap-2">
-                {([
-                  { id: "none", label: "Nenhum" },
-                  { id: "music", label: "Música" },
-                  { id: "speech", label: "Fala" },
-                  { id: "both", label: "Ambos" },
-                ] as const).map((a) => (
-                  <Chip key={a.id} active={cfg.audioType === a.id} onClick={() => patch({ audioType: a.id })}>
+                {(
+                  [
+                    { id: "none", label: "Nenhum" },
+                    { id: "music", label: "Música" },
+                    { id: "speech", label: "Fala" },
+                    { id: "both", label: "Ambos" },
+                  ] as const
+                ).map((a) => (
+                  <Chip
+                    key={a.id}
+                    active={cfg.audioType === a.id}
+                    onClick={() => patch({ audioType: a.id })}
+                  >
                     {a.label}
                   </Chip>
                 ))}
               </div>
-              {(cfg.audioType === "speech" || cfg.audioType === "both") && cfg.provider === "kling" && (
-                <p className="mt-1 text-[10px] text-amber-500">⚠️ Kling não gera fala sincronizada. Use xAI ou Veo3.</p>
-              )}
+              {(cfg.audioType === "speech" || cfg.audioType === "both") &&
+                cfg.provider === "kling" && (
+                  <p className="mt-1 text-[10px] text-amber-500">
+                    ⚠️ Kling não gera fala sincronizada. Use xAI ou Veo3.
+                  </p>
+                )}
             </div>
-            <div>
+            <div className="rounded-lg border border-border bg-card/40 p-3">
               <Label className="text-xs">Idioma</Label>
               <Select value={cfg.language} onValueChange={(v) => patch({ language: v })}>
                 <SelectTrigger className="mt-1 h-8">
@@ -490,7 +523,7 @@ function ConfigPanel({
           </>
         )}
 
-        <div className="space-y-3 border-t border-border pt-3">
+        <div className="space-y-3 rounded-lg border border-border bg-card/40 p-3 sm:col-span-2">
           <div className="flex items-center justify-between">
             <Label className="text-xs">Overlay de texto</Label>
             <Switch
@@ -499,7 +532,7 @@ function ConfigPanel({
             />
           </div>
           {cfg.overlay.enabled && (
-            <>
+            <div className="contents">
               <Input
                 value={cfg.overlay.text}
                 onChange={(e) => patchOverlay({ text: e.target.value })}
@@ -551,7 +584,7 @@ function ConfigPanel({
                   className="mt-2"
                 />
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -563,11 +596,16 @@ function MessageBubble({ m }: { m: Message }) {
   if (m.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-2xl bg-primary px-4 py-2 text-primary-foreground">
+        <div className="max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-primary-foreground shadow-sm">
           {m.attachments?.length > 0 && (
             <div className="mb-2 flex gap-1">
               {m.attachments.map((a, i) => (
-                <img key={i} src={a.url} alt="" className="h-16 w-16 rounded object-cover" />
+                <img
+                  key={i}
+                  src={a.url}
+                  alt="Imagem anexada"
+                  className="h-16 w-16 rounded-md object-cover"
+                />
               ))}
             </div>
           )}
@@ -585,9 +623,9 @@ function MessageBubble({ m }: { m: Message }) {
   }
   if (m.result_type === "image" && m.result_url) {
     return (
-      <Card className="overflow-hidden border-border bg-card/50 p-2">
+      <Card className="w-fit max-w-full overflow-hidden border-border bg-card/70 p-2 shadow-sm">
         <a href={m.result_url} target="_blank" rel="noreferrer">
-          <img src={m.result_url} alt="" className="max-h-[60vh] w-auto rounded-md" />
+          <img src={m.result_url} alt="Imagem gerada" className="max-h-[60vh] w-auto rounded-md" />
         </a>
         <div className="mt-2 flex gap-2">
           <Button size="sm" variant="outline" asChild>
@@ -601,8 +639,8 @@ function MessageBubble({ m }: { m: Message }) {
   }
   if (m.result_type === "video" && m.result_url) {
     return (
-      <Card className="overflow-hidden border-border bg-card/50 p-2">
-        <video src={m.result_url} controls className="max-h-[60vh] w-full rounded-md" />
+      <Card className="w-full max-w-2xl overflow-hidden border-border bg-card/70 p-2 shadow-sm">
+        <video src={m.result_url} controls className="max-h-[60vh] w-full rounded-md bg-muted" />
         <div className="mt-2 flex gap-2">
           <Button size="sm" variant="outline" asChild>
             <a href={m.result_url} download target="_blank" rel="noreferrer">

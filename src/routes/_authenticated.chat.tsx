@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2, Image as ImageIcon, Film, Search } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Film, Search, Loader2 } from "lucide-react";
 import { createConversation, deleteConversation } from "@/lib/chat.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -47,7 +47,11 @@ function ChatSidebar() {
         .limit(100);
       if (error) throw error;
       return (data ?? []) as Array<{
-        id: string; title: string; mode: string; provider: string; updated_at: string;
+        id: string;
+        title: string;
+        mode: string;
+        provider: string;
+        updated_at: string;
       }>;
     },
   });
@@ -65,8 +69,10 @@ function ChatSidebar() {
     mutationFn: (id: string) => del({ data: { id } }),
     onSuccess: (_d, id) => {
       qc.invalidateQueries({ queryKey: ["chat-conversations"] });
+      qc.removeQueries({ queryKey: ["chat-messages", id] });
       if (params.id === id) navigate({ to: "/chat" });
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const filtered = (list.data ?? []).filter((c) =>
@@ -74,27 +80,33 @@ function ChatSidebar() {
   );
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card/30 md:flex">
-      <div className="space-y-2 border-b border-border p-3">
+    <aside className="hidden w-80 shrink-0 flex-col border-r border-border bg-background/95 md:flex">
+      <div className="space-y-3 border-b border-border p-4">
         <Button
           onClick={() => newConv.mutate()}
-          className="w-full justify-start text-primary-foreground"
+          disabled={newConv.isPending}
+          className="h-10 w-full justify-start rounded-lg text-primary-foreground"
           style={{ background: "var(--gradient-primary)" }}
         >
-          <Plus className="mr-2 h-4 w-4" /> Nova conversa
+          {newConv.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Plus className="mr-2 h-4 w-4" />
+          )}{" "}
+          Nova conversa
         </Button>
         <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar"
-            className="h-8 pl-7 text-xs"
+            className="h-9 rounded-lg border-border bg-card/50 pl-9 text-sm"
           />
         </div>
       </div>
       <ScrollArea className="flex-1">
-        <div className="space-y-0.5 p-2">
+        <div className="space-y-1.5 p-3">
           {filtered.length === 0 && !list.isLoading && (
             <p className="px-3 py-6 text-center text-xs text-muted-foreground">
               Nenhuma conversa ainda
@@ -107,27 +119,42 @@ function ChatSidebar() {
               <div
                 key={c.id}
                 className={cn(
-                  "group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
-                  active ? "bg-accent" : "hover:bg-accent/50",
+                  "group flex items-center gap-2 rounded-lg px-2.5 py-2.5 text-sm transition-colors",
+                  active ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
                 )}
               >
                 <Link
                   to="/chat/$id"
                   params={{ id: c.id }}
-                  className="flex min-w-0 flex-1 items-center gap-2"
+                  className="flex min-w-0 flex-1 items-center gap-2.5"
                 >
-                  <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0 flex-1 truncate">{c.title}</span>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">
-                    {formatDistanceToNow(new Date(c.updated_at), { locale: ptBR, addSuffix: false })}
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium leading-5">{c.title}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {c.mode === "video" ? "Vídeo" : "Imagem"} ·{" "}
+                      {formatDistanceToNow(new Date(c.updated_at), {
+                        locale: ptBR,
+                        addSuffix: false,
+                      })}
+                    </span>
                   </span>
                 </Link>
                 <button
-                  onClick={() => removeConv.mutate(c.id)}
-                  className="opacity-0 transition group-hover:opacity-100"
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (confirm("Apagar esta conversa e todas as mensagens?"))
+                      removeConv.mutate(c.id);
+                  }}
+                  disabled={removeConv.isPending}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-70 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 disabled:pointer-events-none disabled:opacity-40"
                   aria-label="Excluir"
+                  title="Apagar conversa"
                 >
-                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             );
