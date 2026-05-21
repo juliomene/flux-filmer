@@ -505,7 +505,7 @@ function ConfigPanel({
             />
           </div>
           {cfg.overlay.enabled && (
-            <>
+            <div className="contents">
               <Input
                 value={cfg.overlay.text}
                 onChange={(e) => patchOverlay({ text: e.target.value })}
@@ -557,7 +557,7 @@ function ConfigPanel({
                   className="mt-2"
                 />
               </div>
-            </>
+          </div>
           )}
         </div>
       </div>
