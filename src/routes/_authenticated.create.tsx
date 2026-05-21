@@ -416,7 +416,7 @@ function CreatePage() {
         </Card>
       )}
 
-      {(mutation.data?.url || (mutation.data?.clips?.length ?? 0) > 0) && (
+      {mutation.data && (mutation.data.url || mutation.data.clips.length > 0) && (
         <Card className="mt-6 space-y-3 border-border bg-card/50 p-4">
           <p className="text-sm text-muted-foreground">{totalDuration}s • {mutation.data.clips.length} cena{mutation.data.clips.length > 1 ? "s" : ""}</p>
           {mutation.data.url ? (
