@@ -49,7 +49,7 @@ function CreatePage() {
   const [videoQuality, setVideoQuality] = useState<"standard" | "pro">("standard");
   const [overlays, setOverlays] = useState<OverlayItem[]>([]);
 
-  const model = VIDEO_MODELS.find((m) => m.id === selectedVideoModel) ?? VIDEO_MODELS[0];
+  const model = VIDEO_MODELS.find((m) => `${m.id}__${m.quality}` === selectedVideoModel) ?? VIDEO_MODELS.find((m) => m.id === selectedVideoModel) ?? VIDEO_MODELS[0];
   const effSceneDur = Math.min(sceneDuration, model.max_duration) as 5 | 10;
   const sceneCount = Math.max(1, Math.ceil(totalDuration / effSceneDur));
   const qMult = VIDEO_QUALITIES.find((q) => q.id === videoQuality)?.price_multiplier ?? 1;
