@@ -229,12 +229,18 @@ function ChatView() {
             </span>
           )}
         </h2>
-        <button
-          onClick={() => setShowConfig((s) => !s)}
-          className="flex items-center gap-1.5 rounded-lg border border-border bg-card/50 px-3 py-2 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
-        >
-          <Settings2 className="h-3.5 w-3.5" /> Configurações
-        </button>
+        <div className="flex items-center gap-2">
+          <QuickModeControls cfg={cfg} patch={patch} />
+          <button
+            onClick={() => setShowConfig((s) => !s)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg border border-border bg-card/50 px-3 py-2 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground",
+              showConfig && "bg-accent text-foreground",
+            )}
+          >
+            <Settings2 className="h-3.5 w-3.5" /> Configurações
+          </button>
+        </div>
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-6">
