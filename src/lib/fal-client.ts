@@ -4,6 +4,25 @@ export function configureFal(apiKey: string) {
   fal.config({ credentials: apiKey });
 }
 
+// ── Idiomas suportados ──────────────────────────────────────────
+export const LANGUAGES = [
+  { code: "Portuguese", label: "🇧🇷 Português" },
+  { code: "English",    label: "🇺🇸 English" },
+  { code: "Spanish",    label: "🇪🇸 Español" },
+  { code: "French",     label: "🇫🇷 Français" },
+  { code: "Italian",    label: "🇮🇹 Italiano" },
+  { code: "German",     label: "🇩🇪 Deutsch" },
+  { code: "Japanese",   label: "🇯🇵 日本語" },
+  { code: "Chinese",    label: "🇨🇳 中文" },
+  { code: "Arabic",     label: "🇸🇦 العربية" },
+] as const;
+
+// Sobe um arquivo para o CDN da fal.ai (URL permanente reutilizável).
+export async function uploadToFal(apiKey: string, file: File): Promise<string> {
+  configureFal(apiKey);
+  return await fal.storage.upload(file);
+}
+
 export const IMAGE_MODELS = [
   { id: "fal-ai/flux/schnell", name: "Flux Schnell", provider: "fal.ai", speed: "Rápido", cost_per_image: "$0.003", supports_image_input: false },
   { id: "fal-ai/flux-pro/v1.1", name: "Flux Pro 1.1", provider: "fal.ai", speed: "Médio", cost_per_image: "$0.04", supports_image_input: false },
@@ -152,22 +171,36 @@ export async function generateClip(params: {
   return { url };
 }
 
-function splitPromptIntoScenes(prompt: string, n: number): string[] {
-  if (n === 1) return [prompt];
-  // Âncora visual: mantida em TODAS as cenas para garantir personagens,
-  // paleta, iluminação e câmera consistentes.
-  const anchor = `Maintain exact same visual style, same characters, same color palette, same lighting, same camera style as established: "${prompt}".`;
-  const transitions = [
-    "Opening establishing shot",
-    "Continuing the scene, same characters",
-    "Moving forward, same setting and characters",
-    "Still in the same environment, same people",
-    "Final shot, same characters and setting",
+export function buildScenePrompts(params: {
+  userPrompt: string;
+  totalScenes: number;
+  language: string;
+  style?: string;
+}): string[] {
+  const { userPrompt, totalScenes, language, style = "cinematic" } = params;
+
+  // Âncora visual obrigatória em TODAS as cenas — garante personagem, roupas,
+  // rosto, paleta e iluminação consistentes do início ao fim.
+  const visualAnchor = [
+    `IMPORTANT: Keep exact same character appearance, same face, same clothes, same hair throughout all scenes.`,
+    `Same lighting style. Same color grading. Same ${style} camera style.`,
+    `DO NOT change the character. DO NOT change the setting unless the story requires it.`,
+    `All spoken dialogue, text on screen, and narration must be in ${language}.`,
+  ].join(" ");
+
+  if (totalScenes === 1) return [`${visualAnchor} ${userPrompt}`];
+
+  const beats = [
+    "Opening shot, establishing the scene",
+    "Continuing action, same character",
+    "Middle of the story, same character progressing",
+    "Climax moment, same character",
+    "Closing shot, same character, resolution",
   ];
-  return Array.from({ length: n }, (_, i) => {
-    const t = transitions[Math.min(i, transitions.length - 1)];
-    const progress = i === 0 ? "beginning" : i === n - 1 ? "ending" : `middle part ${i} of ${n - 2}`;
-    return `${anchor} ${t}, ${progress} of the story. Cinematic continuity, seamless cut. Original prompt context: ${prompt}`;
+
+  return Array.from({ length: totalScenes }, (_, i) => {
+    const beat = beats[Math.min(i, beats.length - 1)];
+    return `${visualAnchor} Scene ${i + 1}/${totalScenes}: ${beat}. Story: ${userPrompt}`;
   });
 }
 
@@ -186,15 +219,25 @@ export async function generateLongVideo(params: {
   sceneDuration: number;
   formatId: string;
   image_url?: string;
-  withAudio?: boolean;
+  language?: string;
+  style?: string;
+  audioType?: "none" | "music" | "speech" | "both";
   audioPrompt?: string;
   projectSeed?: number;
   onSceneProgress?: (done: number, total: number, msg: string) => void;
   onClipReady?: (index: number, url: string) => void;
 }): Promise<{ clips: string[]; merged_url: string | null }> {
+  configureFal(params.apiKey);
   const aspect = ratioToAspect(params.formatId);
   const totalScenes = Math.max(1, Math.ceil(params.totalDuration / params.sceneDuration));
-  const scenes = splitPromptIntoScenes(params.prompt, totalScenes);
+  const language = params.language ?? "Portuguese";
+  const audioType = params.audioType ?? "none";
+  const scenes = buildScenePrompts({
+    userPrompt: params.prompt,
+    totalScenes,
+    language,
+    style: params.style,
+  });
   const quality = params.quality ?? "standard";
   const seed = params.projectSeed ?? Math.floor(Math.random() * 100000);
   const modelId = resolveModelQuality(params.modelConfig.id, quality);
@@ -222,12 +265,15 @@ export async function generateLongVideo(params: {
     // Extrai último frame para continuidade visual da próxima cena
     if (i < scenes.length - 1) {
       try {
-        configureFal(params.apiKey);
-        const frame = await fal.subscribe("fal-ai/ffmpeg-api/extract-frame", {
-          input: { video_url: clip.url, frame_type: "last" },
+        const frame = await fal.subscribe("fal-ai/ffmpeg-api", {
+          input: {
+            function: "extract_frame",
+            input_url: clip.url,
+            timestamp: Math.max(0, params.sceneDuration - 0.5),
+          },
         });
-        const fd = frame.data as { image?: { url: string }; frame?: { url: string } };
-        lastFrameUrl = fd.image?.url ?? fd.frame?.url ?? lastFrameUrl;
+        const fd = frame.data as { image_url?: string; url?: string; image?: { url: string } };
+        lastFrameUrl = fd.image_url ?? fd.url ?? fd.image?.url ?? lastFrameUrl;
       } catch {
         // mantém referência anterior se falhar
       }
@@ -236,52 +282,36 @@ export async function generateLongVideo(params: {
 
   params.onSceneProgress?.(scenes.length, scenes.length, "Unindo cenas...");
 
+  // Áudio opcional
+  let audioUrl: string | undefined;
+  if (audioType !== "none" && (audioType === "music" || audioType === "both")) {
+    try {
+      const audioRes = await fal.subscribe("fal-ai/stable-audio", {
+        input: {
+          prompt: params.audioPrompt || `${params.prompt}, background music, ${params.style ?? "cinematic"}, no vocals`,
+          seconds_total: params.totalDuration,
+          steps: 100,
+        },
+      });
+      const ad = audioRes.data as { audio_file?: { url: string } };
+      audioUrl = ad.audio_file?.url;
+    } catch {
+      // segue sem áudio se falhar
+    }
+  }
+
   let merged_url: string | null = null;
   if (clips.length > 1) {
     try {
-      configureFal(params.apiKey);
       const mergeInput: Record<string, unknown> = {
-        tracks: [
-          {
-            id: "1",
-            type: "video",
-            keyframes: clips.map((url, idx) => ({
-              url,
-              timestamp: idx * params.sceneDuration,
-              duration: params.sceneDuration,
-            })),
-          },
-        ],
+        function: "concat_videos",
+        inputs: clips.map((url, i) => ({ type: "video", url, label: `c${i}` })),
+        output_format: "mp4",
       };
-
-      // Áudio opcional via stable-audio
-      if (params.withAudio && params.audioPrompt) {
-        try {
-          const audioRes = await fal.subscribe("fal-ai/stable-audio", {
-            input: {
-              prompt: params.audioPrompt,
-              seconds_total: params.totalDuration,
-              steps: 100,
-            },
-          });
-          const ad = audioRes.data as { audio_file?: { url: string } };
-          const audioUrl = ad.audio_file?.url;
-          if (audioUrl) {
-            (mergeInput.tracks as unknown[]).push({
-              id: "audio",
-              type: "audio",
-              keyframes: [{ url: audioUrl, timestamp: 0, duration: params.totalDuration }],
-            });
-          }
-        } catch {
-          // segue sem áudio se falhar
-        }
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mergeResult = await fal.subscribe("fal-ai/ffmpeg-api/compose", { input: mergeInput as any });
-      const data = mergeResult.data as { video_url?: string; video?: { url: string } };
-      merged_url = data.video_url ?? data.video?.url ?? clips[clips.length - 1];
+      if (audioUrl) mergeInput.audio_url = audioUrl;
+      const mergeResult = await fal.subscribe("fal-ai/ffmpeg-api", { input: mergeInput });
+      const data = mergeResult.data as { video_url?: string; output_url?: string; url?: string };
+      merged_url = data.video_url ?? data.output_url ?? data.url ?? clips[clips.length - 1];
     } catch {
       merged_url = clips[clips.length - 1];
     }
@@ -290,4 +320,77 @@ export async function generateLongVideo(params: {
   }
 
   return { clips, merged_url };
+}
+
+// ── Overlays (texto/badge sobre vídeo) ──────────────────────────
+export interface OverlayItem {
+  id: string;
+  type: "text" | "icon" | "badge";
+  content: string;
+  x: number;             // % da largura (0-100)
+  y: number;             // % da altura (0-100)
+  fontSize: number;      // px
+  fontWeight: "normal" | "bold" | "black";
+  color: string;
+  bgColor: string;
+  bgOpacity: number;     // 0-100
+  bgRadius: number;
+  padding: number;
+  shadow: boolean;
+  uppercase: boolean;
+  width: "auto" | "full";
+}
+
+export const OVERLAY_PRESETS: Array<Omit<OverlayItem, "id" | "content" | "type"> & { name: string }> = [
+  { name: "Título amarelo", color: "#000000", bgColor: "#FFE600", bgOpacity: 100, fontWeight: "black", uppercase: true, bgRadius: 8, width: "full", x: 0, y: 35, fontSize: 52, padding: 16, shadow: false },
+  { name: "Badge verde CTA", color: "#FFFFFF", bgColor: "#00C853", bgOpacity: 100, fontWeight: "bold", uppercase: false, bgRadius: 30, width: "full", x: 0, y: 85, fontSize: 40, padding: 14, shadow: false },
+  { name: "Legenda preta topo", color: "#FFFFFF", bgColor: "#000000", bgOpacity: 90, fontWeight: "bold", uppercase: true, bgRadius: 0, width: "full", x: 0, y: 5, fontSize: 44, padding: 12, shadow: false },
+  { name: "Legenda preta base", color: "#FFFFFF", bgColor: "#000000", bgOpacity: 90, fontWeight: "bold", uppercase: true, bgRadius: 0, width: "full", x: 0, y: 90, fontSize: 44, padding: 12, shadow: false },
+  { name: "Badge laranja destaque", color: "#FFFFFF", bgColor: "#FF6600", bgOpacity: 100, fontWeight: "black", uppercase: false, bgRadius: 12, width: "full", x: 0, y: 10, fontSize: 48, padding: 14, shadow: true },
+];
+
+export async function applyOverlaysToVideo(params: {
+  apiKey: string;
+  videoUrl: string;
+  overlays: OverlayItem[];
+}): Promise<string> {
+  if (!params.overlays.length) return params.videoUrl;
+  configureFal(params.apiKey);
+
+  const filters = params.overlays.map((o) => {
+    const text = (o.uppercase ? o.content.toUpperCase() : o.content)
+      .replace(/\\/g, "\\\\")
+      .replace(/:/g, "\\:")
+      .replace(/'/g, "\\'");
+    const x = o.width === "full" ? "(w-text_w)/2" : `(w*${o.x / 100})`;
+    const y = `(h*${o.y / 100})`;
+    const bgAlpha = (o.bgOpacity / 100).toFixed(2);
+    const parts = [
+      `drawtext=text='${text}'`,
+      `fontsize=${o.fontSize}`,
+      `fontcolor=${o.color}`,
+      `box=1`,
+      `boxcolor=${o.bgColor}@${bgAlpha}`,
+      `boxborderw=${o.padding}`,
+      `x=${x}`,
+      `y=${y}`,
+    ];
+    if (o.shadow) parts.push(`shadowcolor=black@0.5`, `shadowx=2`, `shadowy=2`);
+    return parts.join(":");
+  }).join(",");
+
+  try {
+    const result = await fal.subscribe("fal-ai/ffmpeg-api", {
+      input: {
+        function: "apply_filter",
+        input_url: params.videoUrl,
+        vf_filter: filters,
+        output_format: "mp4",
+      },
+    });
+    const d = result.data as { output_url?: string; video_url?: string; url?: string };
+    return d.output_url ?? d.video_url ?? d.url ?? params.videoUrl;
+  } catch {
+    return params.videoUrl;
+  }
 }

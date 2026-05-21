@@ -1,50 +1,47 @@
-## VideoForge AI v3 — escopo grande, vou alinhar antes de codar
+## Plano de Atualização Completa
 
-Esse spec assume Next.js + Vercel API Routes, mas o projeto é **TanStack Start + Cloudflare Workers + Supabase já conectado**. Vou adaptar tudo pra essa stack sem perder funcionalidade. Antes de escrever código, preciso confirmar pontos chave porque o trabalho é grande (≈ 25 arquivos novos, 2 migrações, ~6h de geração + iteração).
+Escopo grande. Vou dividir em 4 entregas sequenciais para garantir que cada parte funcione antes de seguir. Confirme se quer tudo ou só algumas partes.
 
-## Adaptações da stack (obrigatórias)
+### Entrega 1 — Núcleo de geração (fal-client.ts)
+- Reescrever `splitPromptIntoScenes` → `buildScenePrompts` com âncora visual forte (personagem, roupas, rosto, idioma).
+- Reescrever `generateLongVideo`: sequencial, sempre image-to-video da cena 2 em diante usando último frame, seed fixo, suporte a `language`, `audioType` (none/music/speech/both), `style`, `referenceImageUrl`.
+- Adicionar `uploadToFal(apiKey, file)` para subir referência uma vez só.
+- Adicionar `applyOverlaysToVideo` via ffmpeg drawtext.
 
-- `/api/*` Vercel → `createServerFn` TanStack para tudo que o frontend chama; `/api/public/*` server routes só se precisar de webhook externo.
-- `NEXT_PUBLIC_*` → vars já existentes (`VITE_SUPABASE_*`, `FAL_KEY` já está configurado).
-- Provider único = **fal.ai** com chave `FAL_KEY` do servidor (já existe). O "campo de API key por provedor" do spec vira opcional — por padrão usa a chave do projeto.
-- Multi-cena merge: `fal-ai/ffmpeg-api` (rodando no fal, não no Worker — Workers não rodam ffmpeg nativo).
-- Realtime de progresso: polling via React Query (Workers + Supabase Realtime no client é ok, mas polling é mais simples e robusto pro caso).
+### Entrega 2 — Settings + Idioma + Áudio
+- Adicionar ao store Zustand: `language`, `audioType`, `audioPrompt`, `audioLanguage`, `style`.
+- Constante `LANGUAGES` exportada de `fal-client.ts`.
+- Atualizar painel ⚙️ do chat (`_authenticated.chat.$id.tsx`) com dropdown de idioma, opções de áudio (Nenhum/Música/Fala/Ambos), aviso quando Kling + Fala.
+- Atualizar `_authenticated.create.tsx` com os mesmos controles.
 
-## O que vou construir (faseado)
+### Entrega 3 — OverlayBuilder
+- Componente `src/components/app/OverlayBuilder.tsx`:
+  - Preview ao vivo no aspect do vídeo
+  - Elementos arrastáveis (drag por % de posição)
+  - Painel de propriedades (cor, fundo, opacidade, raio, peso, maiúsculas, sombra, largura)
+  - 5 presets (`OVERLAY_PRESETS`): Título amarelo, Badge verde, Legenda preta topo/base, Badge laranja
+  - Botões: + Texto, + Badge, + Emoji, + Seta
+- Toggle "Overlay" no painel ⚙️ e em `/create` que abre o builder em Drawer.
+- Após gerar vídeo: se houver overlays, chamar `applyOverlaysToVideo` e mostrar resultado final.
 
-**Fase 1 — Base de dados e provedores**
-- Migração SQL: `chat_conversations`, `chat_messages`, `video_projects`, `video_scenes` + RLS + buckets `chat-attachments`, `final-videos`, `audio-tracks`.
-- Aproveitar `generated_images` e `generated_videos` existentes (adicionar colunas que faltam: `has_overlay`, `overlay_cfg`).
-- `src/lib/providers/config.ts` com os 4 provedores fal.ai e seus modelos.
+### Entrega 4 — Otimização de upload de referência
+- Em `InputImagePicker.tsx`: ao selecionar arquivo, fazer upload imediato via `fal.storage.upload`, guardar URL, e passar essa URL para `generateLongVideo` (sem re-upload por cena).
+- Spinner de "Enviando referência..." durante upload.
 
-**Fase 2 — Server functions (fal.ai)**
-- `chatGenerate` — roteador principal (image / video simples / multi-cena).
-- `splitPrompt` — divide prompt em N cenas via Lovable AI Gateway (Gemini) — mais barato que GPT-4.
-- `generateClip`, `mergeVideo`, `generateAudio`, `applyOverlay` (usa `fal-ai/ffmpeg-api`).
-- `uploadAttachment` — upload pro bucket `chat-attachments`.
+### Detalhes técnicos
+- `fal-ai/ffmpeg-api` substitui as chamadas antigas a `/extract-frame` e `/compose` (que estavam falhando).
+- Frame extraction usa `function: "extract_frame"` + `timestamp: sceneDuration - 0.5`.
+- Merge usa `function: "concat_videos"` com áudio opcional.
+- Idioma é injetado em TODAS as cenas via âncora: `Language for any text or speech: ${language}`.
+- Seed Kling fixo por projeto para consistência.
 
-**Fase 3 — UI do chat (`/chat` e `/chat/$id`)**
-- Layout 3 colunas: `ChatSidebar` + `ChatMessageList` + painel de config colapsável.
-- `ChatInput` com textarea expansível, anexo (📎), galeria (🖼️), painel ⚙️ inline.
-- `ChatMessage` com variantes: user, assistant-image, assistant-video, assistant-multi, loading, error.
-- `OverlayEditor` reutilizável com preview ao vivo.
-- `SceneProgress` durante geração multi-cena.
-- Empty state com 4 sugestões clicáveis.
+### Arquivos modificados
+- `src/lib/fal-client.ts` (reescrita parcial)
+- `src/stores/settings.ts` (novos campos)
+- `src/components/app/OverlayBuilder.tsx` (novo)
+- `src/components/app/InputImagePicker.tsx` (upload imediato)
+- `src/routes/_authenticated.create.tsx` (UI nova)
+- `src/routes/_authenticated.chat.$id.tsx` (painel ⚙️ atualizado)
+- `src/lib/chat.functions.ts` (passar language/audioType para o backend se aplicável — porém geração é client-side, então pode só receber metadata)
 
-**Fase 4 — Integração com páginas existentes**
-- `/images` ganha botão "Adicionar texto" → reusa `OverlayEditor`.
-- `/videos` (já existe) ganha mesma feature.
-- Sidebar do `AppShell` adiciona "Chat IA" como item principal.
-- Index redireciona pra `/chat` quando logado (antes ia pra dashboard).
-
-## Decisões que preciso confirmar
-
-1. **Chave fal.ai**: usa a `FAL_KEY` já configurada no projeto (server-side) ou força cada usuário a colar a própria chave em `/settings`? Spec diz "apiKey do usuário no body", mas você já me deu `FAL_KEY` global. Recomendo: **usa a global por padrão, com opção de override por usuário** (mais simples de testar agora).
-
-2. **Lovable AI Gateway pro `split-prompt`**: tudo bem usar Gemini 2.5 Flash via gateway (rápido, barato) em vez do Grok pra dividir cenas? Não preciso de API key adicional.
-
-3. **Multi-provider real ou só fal.ai**: o spec lista xAI/Kling/Sora/Veo3, todos via fal.ai. Os 4 são modelos do fal.ai — uma única chave acessa tudo. Mas o arquivo atual `providers.ts` tem provedores nativos (OpenAI, Google, xAI direto). **Mantenho os dois caminhos** (fal.ai pro chat, providers nativos pras telas `/images` e `/videos` existentes) ou **migro tudo pra fal.ai**?
-
-4. **Tamanho do PR**: prefere que eu entregue tudo de uma vez (~25 arquivos) ou divido em 2 entregas (fase 1+2 primeiro, depois 3+4)?
-
-Me responde essas 4 e parto pra implementação.
+Confirma para eu seguir com tudo, ou quer priorizar (ex.: só 1+2, deixar overlay para depois)?

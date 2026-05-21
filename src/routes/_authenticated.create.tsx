@@ -10,12 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Film, Eye, EyeOff, Download, ExternalLink, CheckCircle2, Clock, Music } from "lucide-react";
+import { Loader2, Film, Eye, EyeOff, Download, ExternalLink, CheckCircle2, Clock, Music, Languages } from "lucide-react";
 import { toast } from "sonner";
 import { InputImagePicker } from "@/components/app/InputImagePicker";
 import { useSettings } from "@/stores/settings";
-import { VIDEO_MODELS, VIDEO_QUALITIES, FORMATS, generateLongVideo } from "@/lib/fal-client";
-import { Switch } from "@/components/ui/switch";
+import { VIDEO_MODELS, VIDEO_QUALITIES, FORMATS, LANGUAGES, generateLongVideo, applyOverlaysToVideo, OVERLAY_PRESETS, type OverlayItem } from "@/lib/fal-client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/create")({
@@ -30,7 +29,17 @@ type SceneState = { status: "pending" | "generating" | "done" | "error"; url?: s
 
 function CreatePage() {
   const qc = useQueryClient();
-  const { falApiKey, setFalApiKey, selectedVideoModel, setSelectedVideoModel, selectedFormat, setSelectedFormat, sceneDuration, setSceneDuration, totalDuration, setTotalDuration } = useSettings();
+  const {
+    falApiKey, setFalApiKey,
+    selectedVideoModel, setSelectedVideoModel,
+    selectedFormat, setSelectedFormat,
+    sceneDuration, setSceneDuration,
+    totalDuration, setTotalDuration,
+    language, setLanguage,
+    audioType, setAudioType,
+    audioPrompt, setAudioPrompt,
+    style, setStyle,
+  } = useSettings();
 
   const [prompt, setPrompt] = useState("");
   const [inputImage, setInputImage] = useState("");
@@ -38,8 +47,7 @@ function CreatePage() {
   const [scenes, setScenes] = useState<SceneState[]>([]);
   const [progressMsg, setProgressMsg] = useState("");
   const [videoQuality, setVideoQuality] = useState<"standard" | "pro">("standard");
-  const [withAudio, setWithAudio] = useState(false);
-  const [audioPrompt, setAudioPrompt] = useState("");
+  const [overlays, setOverlays] = useState<OverlayItem[]>([]);
 
   const model = VIDEO_MODELS.find((m) => m.id === selectedVideoModel) ?? VIDEO_MODELS[0];
   const effSceneDur = Math.min(sceneDuration, model.max_duration) as 5 | 10;
@@ -47,8 +55,13 @@ function CreatePage() {
   const qMult = VIDEO_QUALITIES.find((q) => q.id === videoQuality)?.price_multiplier ?? 1;
   const perScene = (effSceneDur === 10 ? model.cost_per_10s : model.cost_per_5s) * qMult;
   const videoCost = perScene * sceneCount;
-  const audioCost = withAudio ? totalDuration * 0.01 : 0;
+  const audioCost = audioType !== "none" ? totalDuration * 0.01 : 0;
   const totalCost = (videoCost + audioCost).toFixed(2);
+  const klingSpeechWarning = audioType === "speech" || audioType === "both"
+    ? model.id.includes("kling")
+      ? "⚠️ Kling não gera fala sincronizada nativamente. Use xAI Grok ou Veo3 para diálogo."
+      : null
+    : null;
 
   const history = useQuery({
     queryKey: ["videos-history"],
@@ -79,8 +92,12 @@ function CreatePage() {
         sceneDuration: effSceneDur,
         formatId: selectedFormat,
         image_url: inputImage || undefined,
-        withAudio,
-        audioPrompt: withAudio ? (audioPrompt || `cinematic ambient soundtrack for: ${prompt}`) : undefined,
+        language,
+        style,
+        audioType,
+        audioPrompt: audioType !== "none"
+          ? (audioPrompt || `cinematic background music for: ${prompt}, no vocals`)
+          : undefined,
         onSceneProgress: (done, total, msg) => {
           setProgressMsg(msg);
           setScenes((prev) => prev.map((s, i) => {
@@ -94,7 +111,13 @@ function CreatePage() {
         },
       });
 
-      const finalUrl = merged_url ?? clips[clips.length - 1] ?? "";
+      let finalUrl = merged_url ?? clips[clips.length - 1] ?? "";
+
+      // Aplica overlays se houver
+      if (finalUrl && overlays.length > 0) {
+        setProgressMsg("Aplicando overlays...");
+        finalUrl = await applyOverlaysToVideo({ apiKey: falApiKey, videoUrl: finalUrl, overlays });
+      }
 
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -231,7 +254,7 @@ function CreatePage() {
 
         <div className="space-y-1 rounded-md border border-border bg-muted/30 p-3 text-sm">
           <div>{sceneCount} cena{sceneCount > 1 ? "s" : ""} × ${perScene.toFixed(2)} = <span className="font-medium">${videoCost.toFixed(2)}</span></div>
-          {withAudio && <div>Áudio {totalDuration}s = <span className="font-medium">${audioCost.toFixed(2)}</span></div>}
+          {audioType !== "none" && <div>Áudio {totalDuration}s = <span className="font-medium">${audioCost.toFixed(2)}</span></div>}
           <div className="border-t border-border/60 pt-1">Total estimado ≈ <span className="font-semibold">${totalCost}</span></div>
         </div>
 
@@ -248,19 +271,59 @@ function CreatePage() {
 
         <InputImagePicker value={inputImage} onChange={setInputImage} />
 
-        <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
-          <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-2"><Music className="h-4 w-4" /> Áudio IA</Label>
-            <Switch checked={withAudio} onCheckedChange={setWithAudio} />
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2"><Languages className="h-4 w-4" /> Idioma do vídeo</Label>
+          <Select value={language} onValueChange={setLanguage}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((l) => <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">Aplicado a texto e fala dentro do vídeo.</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Estilo visual</Label>
+          <div className="flex flex-wrap gap-2">
+            {["cinematic", "anime", "documentary", "vintage", "neon", "realistic"].map((s) => (
+              <button key={s} type="button" onClick={() => setStyle(s)}
+                className={cn("rounded-full border px-3 py-1 text-xs transition",
+                  style === s ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted")}>
+                {s}
+              </button>
+            ))}
           </div>
-          {withAudio && (
+        </div>
+
+        <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
+          <Label className="flex items-center gap-2"><Music className="h-4 w-4" /> Áudio</Label>
+          <div className="flex flex-wrap gap-2">
+            {([
+              { id: "none", label: "Nenhum" },
+              { id: "music", label: "Música" },
+              { id: "speech", label: "Fala nativa" },
+              { id: "both", label: "Música + Fala" },
+            ] as const).map((a) => (
+              <button key={a.id} type="button" onClick={() => setAudioType(a.id)}
+                className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                  audioType === a.id ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted")}>
+                {a.label}
+              </button>
+            ))}
+          </div>
+          {(audioType === "music" || audioType === "both") && (
             <Input
-              placeholder={`música ambiente cinematográfica para: ${prompt || "..."}`}
+              placeholder={`música ambiente para: ${prompt || "..."}`}
               value={audioPrompt}
               onChange={(e) => setAudioPrompt(e.target.value)}
             />
           )}
+          {klingSpeechWarning && (
+            <p className="text-xs text-amber-500">{klingSpeechWarning}</p>
+          )}
         </div>
+
+        <OverlayQuickPicker overlays={overlays} setOverlays={setOverlays} />
 
         <div className="space-y-2">
           <Label>API Key fal.ai</Label>
@@ -348,6 +411,56 @@ function CreatePage() {
                 <p className="mt-1 text-muted-foreground">{v.provider} · {v.duration_s}s</p>
               </div>
             </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OverlayQuickPicker({ overlays, setOverlays }: { overlays: OverlayItem[]; setOverlays: (o: OverlayItem[]) => void }) {
+  const addPreset = (presetIdx: number) => {
+    const p = OVERLAY_PRESETS[presetIdx];
+    const item: OverlayItem = {
+      id: crypto.randomUUID(),
+      type: "text",
+      content: "SEU TEXTO AQUI",
+      x: p.x, y: p.y, fontSize: p.fontSize,
+      fontWeight: p.fontWeight, color: p.color, bgColor: p.bgColor,
+      bgOpacity: p.bgOpacity, bgRadius: p.bgRadius, padding: p.padding,
+      shadow: p.shadow, uppercase: p.uppercase, width: p.width,
+    };
+    setOverlays([...overlays, item]);
+  };
+  const updateItem = (id: string, patch: Partial<OverlayItem>) =>
+    setOverlays(overlays.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+  const removeItem = (id: string) => setOverlays(overlays.filter((o) => o.id !== id));
+
+  return (
+    <div className="space-y-3 rounded-md border border-border bg-muted/20 p-3">
+      <Label>Overlays no vídeo (opcional)</Label>
+      <div className="flex flex-wrap gap-2">
+        {OVERLAY_PRESETS.map((p, i) => (
+          <button key={p.name} type="button" onClick={() => addPreset(i)}
+            className="rounded-full border border-border px-3 py-1 text-xs transition hover:bg-muted">
+            + {p.name}
+          </button>
+        ))}
+      </div>
+      {overlays.length > 0 && (
+        <div className="space-y-2">
+          {overlays.map((o) => (
+            <div key={o.id} className="rounded border border-border bg-background p-2 space-y-2">
+              <div className="flex gap-2 items-center">
+                <Input value={o.content} onChange={(e) => updateItem(o.id, { content: e.target.value })} placeholder="Texto" className="h-8" />
+                <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(o.id)}>×</Button>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                <label className="flex items-center gap-1">Y: <input type="range" min={0} max={100} value={o.y} onChange={(e) => updateItem(o.id, { y: Number(e.target.value) })} /></label>
+                <input type="color" value={o.color} onChange={(e) => updateItem(o.id, { color: e.target.value })} className="h-6 w-8" />
+                <input type="color" value={o.bgColor} onChange={(e) => updateItem(o.id, { bgColor: e.target.value })} className="h-6 w-8" />
+              </div>
+            </div>
           ))}
         </div>
       )}
