@@ -16,6 +16,15 @@ import { sendChatMessage } from "@/lib/chat.functions";
 import { ALL_LANGUAGES } from "@/lib/fal-client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/chat/$id")({
   component: ChatView,
@@ -117,21 +126,29 @@ function ChatView() {
     setCfg((c) => ({ ...c, overlay: { ...c.overlay, ...p } }));
 
   // Hydrate config from conversation
-  useQuery({
-    queryKey: ["chat-conv-meta", conversationId],
-    queryFn: async () => {
+  // Hydrate config from conversation — ONCE per conversation id, otherwise
+  // every refetch overrides the user's selections (caused the "config keeps
+  // resetting" bug where chat only worked right after Nova conversa).
+  const hydratedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (hydratedRef.current === conversationId) return;
+    hydratedRef.current = conversationId;
+    let cancelled = false;
+    (async () => {
       const { data } = await supabase
         .from("chat_conversations" as never)
         .select("mode,provider")
         .eq("id", conversationId)
         .single();
       const row = data as { mode: Mode; provider: Provider } | null;
-      if (row) {
+      if (!cancelled && row) {
         setCfg((c) => ({ ...c, mode: row.mode, provider: row.provider }));
       }
-      return row;
-    },
-  });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId]);
 
   const messages = useQuery({
     queryKey: ["chat-messages", conversationId],
