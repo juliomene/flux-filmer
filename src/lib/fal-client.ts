@@ -366,6 +366,7 @@ export async function generateLongVideo(params: {
     language,
     style: params.style,
   });
+  const sceneBlocks = totalScenes > 1 ? splitPromptIntoSceneBlocks(params.prompt, totalScenes) : [params.prompt];
   const quality = params.quality ?? "standard";
   const seed = params.projectSeed ?? Math.floor(Math.random() * 100000);
   const modelId = resolveModelQuality(params.modelConfig.id, quality);
@@ -373,6 +374,7 @@ export async function generateLongVideo(params: {
   const hasNativeAudio = (params.modelConfig as { has_native_audio?: boolean }).has_native_audio === true;
   const wantsAudio = audioType !== "none";
   const useNativeAudio = hasNativeAudio && wantsAudio;
+  const useExternalSpeech = !useNativeAudio && (audioType === "speech" || audioType === "both");
 
   const clips: string[] = [];
   let lastFrameUrl: string | undefined = params.image_url;
@@ -392,23 +394,37 @@ export async function generateLongVideo(params: {
       modelResolution: (params.modelConfig as unknown as { resolution_param?: string }).resolution_param,
       onProgress: (msg) => params.onSceneProgress?.(i, scenes.length, msg),
     });
-    clips.push(clip.url);
-    params.onClipReady?.(i, clip.url);
+    let sceneUrl = clip.url;
+
+    if (useExternalSpeech) {
+      params.onSceneProgress?.(i, scenes.length, `Gerando fala da cena ${i + 1}...`);
+      const audio = await generateSceneTTS({
+        apiKey: params.apiKey,
+        text: extractDialogueText(sceneBlocks[i]) || sceneBlocks[i],
+        language,
+      });
+      if (audio) {
+        params.onSceneProgress?.(i, scenes.length, `Sincronizando fala da cena ${i + 1}...`);
+        sceneUrl = await muxVideoAudio({ apiKey: params.apiKey, videoUrl: clip.url, audioUrl: audio });
+      }
+    }
+
+    clips.push(sceneUrl);
+    params.onClipReady?.(i, sceneUrl);
 
     if (i < scenes.length - 1) {
-      lastFrameUrl = undefined;
+      lastFrameUrl = params.image_url;
       try {
-        const frame = await fal.subscribe("fal-ai/ffmpeg-api", {
+        const frame = await fal.subscribe("fal-ai/ffmpeg-api/extract-frame", {
           input: {
-            function: "extract_frame",
-            input_url: clip.url,
-            timestamp: Math.max(0, params.sceneDuration - 0.5),
+            video_url: clip.url,
+            frame_type: "last",
           },
         });
-        const fd = frame.data as { image_url?: string; url?: string; image?: { url: string } };
-        lastFrameUrl = fd.image_url ?? fd.url ?? fd.image?.url;
+        const fd = frame.data as { images?: { url: string }[]; image_url?: string; url?: string; image?: { url: string } };
+        lastFrameUrl = fd.images?.[0]?.url ?? fd.image_url ?? fd.url ?? fd.image?.url ?? params.image_url;
       } catch {
-        lastFrameUrl = undefined;
+        lastFrameUrl = params.image_url;
       }
       // eslint-disable-next-line no-console
       console.log(`[fal-client] cena ${i + 1} concluída. próxima usará referência:`, lastFrameUrl);
