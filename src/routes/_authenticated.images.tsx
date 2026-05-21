@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Eye, EyeOff, Download, ExternalLink } from "lucide-react";
+import { Loader2, Sparkles, Eye, EyeOff, Download, ExternalLink, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { InputImagePicker } from "@/components/app/InputImagePicker";
 import { useSettings } from "@/stores/settings";
@@ -81,6 +81,18 @@ function ImagesPage() {
       qc.invalidateQueries({ queryKey: ["images-history"] });
     },
     onError: (e: Error) => { toast.error(e.message); setProgressMsg(""); },
+  });
+
+  const removeHistory = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("generated_images").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Removido do histórico");
+      qc.invalidateQueries({ queryKey: ["images-history"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return (
@@ -226,7 +238,17 @@ function ImagesPage() {
       ) : (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {history.data!.map((img) => (
-            <Card key={img.id} className="overflow-hidden border-border bg-card/50">
+            <Card key={img.id} className="group relative overflow-hidden border-border bg-card/50">
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("Excluir esta imagem do histórico?")) removeHistory.mutate(img.id);
+                }}
+                className="absolute right-2 top-2 z-10 rounded-md bg-background/80 p-1.5 opacity-0 backdrop-blur transition hover:bg-destructive hover:text-destructive-foreground group-hover:opacity-100"
+                aria-label="Excluir"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
               <a href={img.image_url} target="_blank" rel="noreferrer">
                 <img src={img.image_url} alt={img.prompt} className="aspect-square w-full object-cover" />
               </a>
