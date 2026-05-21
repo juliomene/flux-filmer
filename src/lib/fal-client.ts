@@ -1,4 +1,10 @@
 import { fal } from "@fal-ai/client";
+import {
+  type VideoManifest,
+  type Scene,
+  assembleScenePrompt,
+  validateSceneRuntime,
+} from "./video-manifest";
 
 export function configureFal(apiKey: string) {
   fal.config({ credentials: apiKey });
@@ -482,4 +488,206 @@ export async function applyOverlaysToVideo(params: {
   } catch {
     return params.videoUrl;
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Pipeline sequencial baseado em VideoManifest
+// ─────────────────────────────────────────────────────────────
+
+export async function extractLastFrame(params: {
+  apiKey: string;
+  videoUrl: string;
+  durationSeconds: number;
+}): Promise<string | undefined> {
+  configureFal(params.apiKey);
+  try {
+    const frame = await fal.subscribe("fal-ai/ffmpeg-api", {
+      input: {
+        function: "extract_frame",
+        input_url: params.videoUrl,
+        timestamp: Math.max(0, params.durationSeconds - 0.3),
+      },
+    });
+    const fd = frame.data as { image_url?: string; url?: string; image?: { url: string } };
+    return fd.image_url ?? fd.url ?? fd.image?.url;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function generateSceneTTS(params: {
+  apiKey: string;
+  text: string;
+  language: string;
+  voice?: string;
+}): Promise<string | undefined> {
+  configureFal(params.apiKey);
+  try {
+    const res = await fal.subscribe("fal-ai/playai/tts/v3", {
+      input: {
+        input: params.text,
+        voice: params.voice || "Jennifer (English (US)/American)",
+        response_format: "url",
+      },
+    });
+    const d = res.data as { audio?: { url: string }; audio_url?: string; url?: string };
+    return d.audio?.url ?? d.audio_url ?? d.url;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function muxVideoAudio(params: {
+  apiKey: string;
+  videoUrl: string;
+  audioUrl: string;
+}): Promise<string> {
+  configureFal(params.apiKey);
+  try {
+    const res = await fal.subscribe("fal-ai/ffmpeg-api", {
+      input: {
+        function: "mux_audio",
+        video_url: params.videoUrl,
+        audio_url: params.audioUrl,
+        output_format: "mp4",
+      },
+    });
+    const d = res.data as { video_url?: string; output_url?: string; url?: string };
+    return d.video_url ?? d.output_url ?? d.url ?? params.videoUrl;
+  } catch {
+    return params.videoUrl;
+  }
+}
+
+export interface GenerateFromManifestParams {
+  apiKey: string;
+  manifest: VideoManifest;
+  modelConfig: VideoModel;
+  quality?: VideoQuality;
+  onSceneUpdate?: (scene: Scene) => void;
+  onProgress?: (msg: string) => void;
+}
+
+async function runSingleScene(opts: GenerateFromManifestParams, idx: number, prevLastFrame: string | undefined) {
+  const { manifest, modelConfig, quality = "standard", apiKey } = opts;
+  const scene = manifest.scenes[idx];
+  scene.previous_scene_last_frame = prevLastFrame ?? null;
+  scene.video_prompt = assembleScenePrompt(scene, manifest.bible, idx, manifest.total_scenes);
+  scene.status = "generating";
+  opts.onSceneUpdate?.(scene);
+
+  const v = validateSceneRuntime(manifest, idx);
+  if (!v.ok) {
+    scene.status = "error";
+    scene.error = v.errors.join(" | ");
+    opts.onSceneUpdate?.(scene);
+    throw new Error(`Validação cena ${scene.order}: ${scene.error}`);
+  }
+
+  const modelId = resolveModelQuality(modelConfig.id, quality);
+  const modelIdImg = resolveModelQuality(modelConfig.id_img, quality);
+  const hasNativeAudio = (modelConfig as { has_native_audio?: boolean }).has_native_audio === true;
+  const useNative = scene.audio_mode === "native" && hasNativeAudio;
+  const refImage = prevLastFrame ?? manifest.character_ref_url ?? manifest.environment_ref_url ?? undefined;
+
+  try {
+    const clip = await generateClip({
+      apiKey,
+      modelId,
+      modelIdImg,
+      prompt: scene.video_prompt,
+      aspect_ratio: manifest.bible.aspect_ratio,
+      duration: scene.duration_seconds,
+      image_url: refImage,
+      seed: manifest.seed,
+      withAudio: useNative,
+      quality,
+      modelResolution: (modelConfig as unknown as { resolution_param?: string }).resolution_param,
+      onProgress: (m) => opts.onProgress?.(`Cena ${scene.order}/${manifest.total_scenes}: ${m}`),
+    });
+    scene.clip_url = clip.url;
+
+    // TTS externo: gera áudio com o dialogue_chunk e muxa.
+    if (scene.audio_mode === "tts_external") {
+      opts.onProgress?.(`Cena ${scene.order}: gerando narração...`);
+      const audio = await generateSceneTTS({
+        apiKey,
+        text: scene.dialogue_chunk,
+        language: manifest.bible.language,
+        voice: manifest.voice,
+      });
+      if (audio) {
+        scene.audio_url = audio;
+        opts.onProgress?.(`Cena ${scene.order}: sincronizando áudio...`);
+        scene.final_url = await muxVideoAudio({ apiKey, videoUrl: clip.url, audioUrl: audio });
+      } else {
+        scene.final_url = clip.url;
+      }
+    } else {
+      scene.final_url = clip.url;
+    }
+
+    // Extrai último frame para próxima cena (se houver).
+    if (idx < manifest.total_scenes - 1) {
+      opts.onProgress?.(`Cena ${scene.order}: extraindo frame final...`);
+      scene.last_frame_url = await extractLastFrame({
+        apiKey,
+        videoUrl: scene.clip_url,
+        durationSeconds: scene.duration_seconds,
+      });
+    }
+
+    scene.status = "done";
+    opts.onSceneUpdate?.(scene);
+    return scene.last_frame_url;
+  } catch (e) {
+    scene.status = "error";
+    scene.error = e instanceof Error ? e.message : String(e);
+    opts.onSceneUpdate?.(scene);
+    throw e;
+  }
+}
+
+export async function generateFromManifest(opts: GenerateFromManifestParams): Promise<{
+  clips: string[];
+  merged_url: string | null;
+  manifest: VideoManifest;
+}> {
+  const { manifest, apiKey } = opts;
+  configureFal(apiKey);
+
+  let prev: string | undefined = undefined;
+  for (let i = 0; i < manifest.scenes.length; i++) {
+    prev = await runSingleScene(opts, i, prev);
+  }
+
+  // Concat final em ordem.
+  const finals = manifest.scenes.map((s) => s.final_url || s.clip_url).filter(Boolean) as string[];
+  let merged_url: string | null = null;
+  if (finals.length > 1) {
+    opts.onProgress?.("Unindo cenas no vídeo final...");
+    try {
+      const res = await fal.subscribe("fal-ai/ffmpeg-api", {
+        input: {
+          function: "concat_videos",
+          inputs: finals.map((url, i) => ({ type: "video", url, label: `c${i}` })),
+          output_format: "mp4",
+        },
+      });
+      const d = res.data as { video_url?: string; output_url?: string; url?: string };
+      merged_url = d.video_url ?? d.output_url ?? d.url ?? null;
+    } catch {
+      merged_url = null;
+    }
+  } else {
+    merged_url = finals[0] ?? null;
+  }
+  return { clips: finals, merged_url, manifest };
+}
+
+// Regera apenas uma cena, mantendo as outras. Usa o último frame da cena anterior.
+export async function regenerateScene(opts: GenerateFromManifestParams, sceneIndex: number) {
+  const prev = sceneIndex > 0 ? opts.manifest.scenes[sceneIndex - 1].last_frame_url : undefined;
+  await runSingleScene(opts, sceneIndex, prev);
+  return opts.manifest.scenes[sceneIndex];
 }
