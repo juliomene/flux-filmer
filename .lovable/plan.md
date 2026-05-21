@@ -1,47 +1,143 @@
-## Plano de Atualização Completa
+# Pipeline de Vídeo Sequencial com Continuidade Real
 
-Escopo grande. Vou dividir em 4 entregas sequenciais para garantir que cada parte funcione antes de seguir. Confirme se quer tudo ou só algumas partes.
+## Objetivo
+Resolver: cenas atuais não mantêm personagem/cenário/fala. Cada cena vira "vídeo independente". Falas se repetem. Sem cronologia.
 
-### Entrega 1 — Núcleo de geração (fal-client.ts)
-- Reescrever `splitPromptIntoScenes` → `buildScenePrompts` com âncora visual forte (personagem, roupas, rosto, idioma).
-- Reescrever `generateLongVideo`: sequencial, sempre image-to-video da cena 2 em diante usando último frame, seed fixo, suporte a `language`, `audioType` (none/music/speech/both), `style`, `referenceImageUrl`.
-- Adicionar `uploadToFal(apiKey, file)` para subir referência uma vez só.
-- Adicionar `applyOverlaysToVideo` via ffmpeg drawtext.
+Reescrever o núcleo de geração (`fal-client.ts`) introduzindo **Video Manifest + Continuity Bible + dialogue chunks únicos + geração sequencial com last-frame**, e adicionar uma UI de revisão de cenas antes de gerar.
 
-### Entrega 2 — Settings + Idioma + Áudio
-- Adicionar ao store Zustand: `language`, `audioType`, `audioPrompt`, `audioLanguage`, `style`.
-- Constante `LANGUAGES` exportada de `fal-client.ts`.
-- Atualizar painel ⚙️ do chat (`_authenticated.chat.$id.tsx`) com dropdown de idioma, opções de áudio (Nenhum/Música/Fala/Ambos), aviso quando Kling + Fala.
-- Atualizar `_authenticated.create.tsx` com os mesmos controles.
+---
 
-### Entrega 3 — OverlayBuilder
-- Componente `src/components/app/OverlayBuilder.tsx`:
-  - Preview ao vivo no aspect do vídeo
-  - Elementos arrastáveis (drag por % de posição)
-  - Painel de propriedades (cor, fundo, opacidade, raio, peso, maiúsculas, sombra, largura)
-  - 5 presets (`OVERLAY_PRESETS`): Título amarelo, Badge verde, Legenda preta topo/base, Badge laranja
-  - Botões: + Texto, + Badge, + Emoji, + Seta
-- Toggle "Overlay" no painel ⚙️ e em `/create` que abre o builder em Drawer.
-- Após gerar vídeo: se houver overlays, chamar `applyOverlaysToVideo` e mostrar resultado final.
+## 1. Camada de dados (novo módulo `src/lib/video-manifest.ts`)
 
-### Entrega 4 — Otimização de upload de referência
-- Em `InputImagePicker.tsx`: ao selecionar arquivo, fazer upload imediato via `fal.storage.upload`, guardar URL, e passar essa URL para `generateLongVideo` (sem re-upload por cena).
-- Spinner de "Enviando referência..." durante upload.
+Tipos centrais:
 
-### Detalhes técnicos
-- `fal-ai/ffmpeg-api` substitui as chamadas antigas a `/extract-frame` e `/compose` (que estavam falhando).
-- Frame extraction usa `function: "extract_frame"` + `timestamp: sceneDuration - 0.5`.
-- Merge usa `function: "concat_videos"` com áudio opcional.
-- Idioma é injetado em TODAS as cenas via âncora: `Language for any text or speech: ${language}`.
-- Seed Kling fixo por projeto para consistência.
+```ts
+ContinuityBible {
+  character_lock, wardrobe_lock, environment_lock,
+  camera_lock, lighting_lock, style_lock,
+  voice_tone, language, aspect_ratio, continuity_rule
+}
 
-### Arquivos modificados
-- `src/lib/fal-client.ts` (reescrita parcial)
-- `src/stores/settings.ts` (novos campos)
-- `src/components/app/OverlayBuilder.tsx` (novo)
-- `src/components/app/InputImagePicker.tsx` (upload imediato)
-- `src/routes/_authenticated.create.tsx` (UI nova)
-- `src/routes/_authenticated.chat.$id.tsx` (painel ⚙️ atualizado)
-- `src/lib/chat.functions.ts` (passar language/audioType para o backend se aplicável — porém geração é client-side, então pode só receber metadata)
+Scene {
+  scene_id, order, duration_seconds, start_time, end_time,
+  reference_images[], previous_scene_last_frame,
+  dialogue_chunk, visual_action, camera_action, emotion,
+  video_prompt, negative_prompt, audio_mode,
+  status: pending|generating|done|error,
+  clip_url?, last_frame_url?, audio_url?, error?
+}
 
-Confirma para eu seguir com tudo, ou quer priorizar (ex.: só 1+2, deixar overlay para depois)?
+VideoManifest {
+  video_id, title, total_duration, scene_duration, total_scenes,
+  character_ref_url, environment_ref_url,
+  bible: ContinuityBible,
+  full_script, scenes: Scene[],
+  global_negative, seed
+}
+```
+
+Funções:
+- `buildManifest(input)` — usa Lovable AI Gateway (Gemini) para:
+  1. Extrair `ContinuityBible` do prompt + imagens.
+  2. Dividir o roteiro completo em N `dialogue_chunk` (um por cena, **únicos**, não sobrepostos).
+  3. Para cada cena gerar `visual_action`, `camera_action`, `emotion`.
+- `assembleScenePrompt(scene, bible, sceneIdx, total)` — monta o prompt base fornecido pelo usuário, injetando bible + chunk + ação + "esta é cena N de M, continuação direta da anterior".
+- `validateManifest(m)` — bloqueia geração se:
+  - algum `dialogue_chunk` duplicado/vazio
+  - número de cenas ≠ falas
+  - cena ≥2 sem `previous_scene_last_frame` no momento da geração
+  - bible vazia
+
+Constante `GLOBAL_NEGATIVE_PROMPT` com a lista anti-bug (troca de rosto, dedos, morphing, legenda, etc.).
+
+## 2. Geração sequencial (refatorar `generateLongVideo` em `fal-client.ts`)
+
+Nova função `generateFromManifest(manifest, { apiKey, model, onProgress, onSceneDone })`:
+
+```
+for i in 0..N-1:
+  scene = manifest.scenes[i]
+  if i>0: scene.previous_scene_last_frame = prevLastFrame
+  scene.video_prompt = assembleScenePrompt(...)
+  validateScene(scene)            // hard fail se inválido
+  clip = await generateClip({
+    image_url: prevLastFrame ?? characterRef,
+    prompt: scene.video_prompt,
+    duration: scene.duration_seconds,
+    seed: manifest.seed,           // fixo no projeto
+    aspect_ratio: bible.aspect_ratio,
+    withAudio: audioMode === 'native',
+  })
+  scene.clip_url = clip.url
+  prevLastFrame = await extractLastFrame(clip.url, scene.duration_seconds - 0.3)
+  scene.last_frame_url = prevLastFrame
+  scene.status = 'done'
+  onSceneDone(scene)
+```
+
+Sequencial obrigatório (sem `Promise.all`).
+
+`regenerateScene(manifest, sceneIndex)` — regera **apenas** uma cena reutilizando `last_frame` da cena anterior e mantém as demais.
+
+## 3. Áudio — TTS externo vs nativo
+
+Adicionar:
+- `audioMode: 'tts_external' | 'native'` no manifest (default `tts_external`).
+- `generateSceneTTS(scene, voice)` chamando `fal-ai/playai/tts/v3` (ou `fal-ai/elevenlabs/tts`) com o `dialogue_chunk` exato. Prompt de voz BR natural.
+- Função `mergeSceneWithAudio(clip_url, audio_url)` via `fal-ai/ffmpeg-api` `mux_audio` (substituindo trilha original).
+- Merge final: `concat_videos` na ordem `scene_01..N`, áudio já embutido por cena.
+
+## 4. Persistência (Supabase)
+
+Migration nova — adicionar colunas em `chat_video_projects` e `chat_video_scenes`:
+- `chat_video_projects.manifest jsonb`, `continuity_bible jsonb`, `final_script text`, `audio_mode text default 'tts_external'`, `seed integer`
+- `chat_video_scenes.dialogue_chunk text`, `visual_action text`, `emotion text`, `last_frame_url text`, `audio_url text`, `video_prompt text`
+
+(RLS atual já cobre via project_id → user.)
+
+## 5. UI — nova rota `/create-sequential` (ou aba na `/create`)
+
+Tela única com 3 passos visíveis:
+
+**Passo 1 — Inputs**
+- upload imagem do personagem
+- upload imagem do ambiente (opcional)
+- textarea roteiro completo
+- duração total (slider 10–60s)
+- duração por cena (5/8/10)
+- idioma (default pt-BR), voz (M/F)
+- modo áudio (TTS externo / nativo)
+- botão **Gerar Manifesto**
+
+**Passo 2 — Revisão de cenas** (após manifest)
+- card por cena: número, duração, `dialogue_chunk` editável, `visual_action` editável, prompt gerado (expandable), status
+- validação visual de chunks duplicados (badge vermelho)
+- botão **Gerar Vídeo Sequencial**
+
+**Passo 3 — Resultado**
+- progresso por cena (1/N… N/N)
+- preview de cada cena conforme conclui (`onSceneDone`)
+- botão **Regerar Cena X** por card
+- ao final: player do vídeo unido + downloads (vídeo final, cenas, manifesto JSON, áudios)
+
+## 6. Validações duras (bloqueiam envio à fal.ai)
+- manifest existe
+- todos `scene_id` únicos
+- todos `dialogue_chunk` únicos e não-vazios
+- cena ≥2 com `previous_scene_last_frame` setado em runtime
+- prompt contém "scene N of M" + "continuation of previous scene" + character_lock
+- seed do projeto fixa para todas as cenas
+
+---
+
+## Arquivos
+- **novo** `src/lib/video-manifest.ts` (tipos, builder, validador, prompt assembler)
+- **edit** `src/lib/fal-client.ts` (substituir `buildScenePrompts`/`generateLongVideo`, adicionar `generateFromManifest`, `regenerateScene`, `extractLastFrame`, TTS helpers, mux)
+- **novo** `src/routes/_authenticated.sequential.tsx` (UI 3 passos)
+- **edit** `src/components/app/AppShell.tsx` (link de nav "Vídeo Sequencial")
+- **migration** colunas extras em `chat_video_projects` e `chat_video_scenes`
+
+## Out of scope (não nesta entrega)
+- Reordenação drag-and-drop de cenas
+- Editor de timeline visual
+- Multi-personagem com bíblias separadas
