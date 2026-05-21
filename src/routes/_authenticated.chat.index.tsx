@@ -1,16 +1,45 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, Sparkles } from "lucide-react";
+import { Film, Image as ImageIcon, Loader2, Send, Settings2, Sparkles } from "lucide-react";
 import { createConversation, sendChatMessage } from "@/lib/chat.functions";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/chat/")({
   component: ChatEmpty,
 });
+
+type Mode = "image" | "video";
+type Provider = "kling" | "xai" | "sora" | "veo3";
+
+type StartConfig = {
+  mode: Mode;
+  provider: Provider;
+  duration: number;
+  perScene: 5 | 10;
+  aspect: "16:9" | "9:16" | "1:1";
+};
+
+const DEFAULT_START_CFG: StartConfig = {
+  mode: "image",
+  provider: "kling",
+  duration: 5,
+  perScene: 5,
+  aspect: "16:9",
+};
+
+function loadStartCfg(): StartConfig {
+  if (typeof window === "undefined") return DEFAULT_START_CFG;
+  try {
+    return { ...DEFAULT_START_CFG, ...JSON.parse(localStorage.getItem("chat_config") ?? "{}") };
+  } catch {
+    return DEFAULT_START_CFG;
+  }
+}
 
 function ChatEmpty() {
   const navigate = useNavigate();
