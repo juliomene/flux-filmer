@@ -741,27 +741,9 @@ export async function generateFromManifest(opts: GenerateFromManifestParams): Pr
     prev = await runSingleScene(opts, i, prev);
   }
 
-  // Concat final em ordem.
+  // Merge final em ordem.
   const finals = manifest.scenes.map((s) => s.final_url || s.clip_url).filter(Boolean) as string[];
-  let merged_url: string | null = null;
-  if (finals.length > 1) {
-    opts.onProgress?.("Unindo cenas no vídeo final...");
-    try {
-      const res = await fal.subscribe("fal-ai/ffmpeg-api", {
-        input: {
-          function: "concat_videos",
-          inputs: finals.map((url, i) => ({ type: "video", url, label: `c${i}` })),
-          output_format: "mp4",
-        },
-      });
-      const d = res.data as { video_url?: string; output_url?: string; url?: string };
-      merged_url = d.video_url ?? d.output_url ?? d.url ?? null;
-    } catch {
-      merged_url = null;
-    }
-  } else {
-    merged_url = finals[0] ?? null;
-  }
+  const merged_url = await mergeVideoClips(apiKey, finals, opts.onProgress);
   return { clips: finals, merged_url, manifest };
 }
 
