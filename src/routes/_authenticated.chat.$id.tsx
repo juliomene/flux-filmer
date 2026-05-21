@@ -49,7 +49,9 @@ type ChatConfig = {
   duration: number; // total seconds
   perScene: 5 | 10;
   aspect: "16:9" | "9:16" | "1:1";
-  audio: boolean;
+  audioType: "none" | "music" | "speech" | "both";
+  language: string;
+  style: string;
   overlay: OverlayCfg;
 };
 
@@ -60,7 +62,9 @@ const DEFAULT_CFG: ChatConfig = {
   duration: 5,
   perScene: 5,
   aspect: "16:9",
-  audio: false,
+  audioType: "none",
+  language: "Portuguese",
+  style: "cinematic",
   overlay: {
     enabled: false,
     text: "",
