@@ -10,11 +10,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Film, Eye, EyeOff, Download, ExternalLink, CheckCircle2, Clock } from "lucide-react";
+import { Loader2, Film, Eye, EyeOff, Download, ExternalLink, CheckCircle2, Clock, Music } from "lucide-react";
 import { toast } from "sonner";
 import { InputImagePicker } from "@/components/app/InputImagePicker";
 import { useSettings } from "@/stores/settings";
-import { VIDEO_MODELS, FORMATS, generateLongVideo } from "@/lib/fal-client";
+import { VIDEO_MODELS, VIDEO_QUALITIES, FORMATS, generateLongVideo } from "@/lib/fal-client";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/create")({
@@ -36,12 +37,18 @@ function CreatePage() {
   const [showKey, setShowKey] = useState(false);
   const [scenes, setScenes] = useState<SceneState[]>([]);
   const [progressMsg, setProgressMsg] = useState("");
+  const [videoQuality, setVideoQuality] = useState<"standard" | "pro">("standard");
+  const [withAudio, setWithAudio] = useState(false);
+  const [audioPrompt, setAudioPrompt] = useState("");
 
   const model = VIDEO_MODELS.find((m) => m.id === selectedVideoModel) ?? VIDEO_MODELS[0];
   const effSceneDur = Math.min(sceneDuration, model.max_duration) as 5 | 10;
   const sceneCount = Math.max(1, Math.ceil(totalDuration / effSceneDur));
-  const perScene = effSceneDur === 10 ? model.cost_per_10s : model.cost_per_5s;
-  const totalCost = (perScene * sceneCount).toFixed(2);
+  const qMult = VIDEO_QUALITIES.find((q) => q.id === videoQuality)?.price_multiplier ?? 1;
+  const perScene = (effSceneDur === 10 ? model.cost_per_10s : model.cost_per_5s) * qMult;
+  const videoCost = perScene * sceneCount;
+  const audioCost = withAudio ? totalDuration * 0.01 : 0;
+  const totalCost = (videoCost + audioCost).toFixed(2);
 
   const history = useQuery({
     queryKey: ["videos-history"],
@@ -66,16 +73,19 @@ function CreatePage() {
       const { clips, merged_url } = await generateLongVideo({
         apiKey: falApiKey,
         modelConfig: model,
+        quality: videoQuality,
         prompt,
         totalDuration,
         sceneDuration: effSceneDur,
         formatId: selectedFormat,
         image_url: inputImage || undefined,
+        withAudio,
+        audioPrompt: withAudio ? (audioPrompt || `cinematic ambient soundtrack for: ${prompt}`) : undefined,
         onSceneProgress: (done, total, msg) => {
           setProgressMsg(msg);
           setScenes((prev) => prev.map((s, i) => {
             if (i < done) return { ...s, status: "done" };
-            if (i < Math.min(done + 3, total)) return { ...s, status: "generating" };
+            if (i === done && done < total) return { ...s, status: "generating" };
             return { ...s, status: "pending" };
           }));
         },
@@ -141,6 +151,25 @@ function CreatePage() {
         </div>
 
         <div className="space-y-2">
+          <Label>Qualidade do vídeo</Label>
+          <div className="flex flex-wrap gap-2">
+            {VIDEO_QUALITIES.map((q) => (
+              <button
+                key={q.id}
+                type="button"
+                onClick={() => setVideoQuality(q.id as "standard" | "pro")}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-sm transition",
+                  videoQuality === q.id ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted",
+                )}
+              >
+                {q.label} <span className="text-xs text-muted-foreground">— {q.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
           <Label>Formato</Label>
           <div className="flex flex-wrap gap-2">
             {FORMATS.map((f) => (
@@ -200,8 +229,10 @@ function CreatePage() {
           </div>
         </div>
 
-        <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
-          <span className="font-medium">{totalDuration}s</span> = {sceneCount} cena{sceneCount > 1 ? "s" : ""} de {effSceneDur}s · custo estimado <span className="font-semibold">~${totalCost}</span>
+        <div className="space-y-1 rounded-md border border-border bg-muted/30 p-3 text-sm">
+          <div>{sceneCount} cena{sceneCount > 1 ? "s" : ""} × ${perScene.toFixed(2)} = <span className="font-medium">${videoCost.toFixed(2)}</span></div>
+          {withAudio && <div>Áudio {totalDuration}s = <span className="font-medium">${audioCost.toFixed(2)}</span></div>}
+          <div className="border-t border-border/60 pt-1">Total estimado ≈ <span className="font-semibold">${totalCost}</span></div>
         </div>
 
         <div className="space-y-2">
@@ -216,6 +247,20 @@ function CreatePage() {
         </div>
 
         <InputImagePicker value={inputImage} onChange={setInputImage} />
+
+        <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
+          <div className="flex items-center justify-between">
+            <Label className="flex items-center gap-2"><Music className="h-4 w-4" /> Áudio IA</Label>
+            <Switch checked={withAudio} onCheckedChange={setWithAudio} />
+          </div>
+          {withAudio && (
+            <Input
+              placeholder={`música ambiente cinematográfica para: ${prompt || "..."}`}
+              value={audioPrompt}
+              onChange={(e) => setAudioPrompt(e.target.value)}
+            />
+          )}
+        </div>
 
         <div className="space-y-2">
           <Label>API Key fal.ai</Label>
@@ -254,6 +299,7 @@ function CreatePage() {
 
       {scenes.length > 0 && (
         <Card className="mt-6 space-y-3 border-border bg-card/50 p-4">
+          <p className="text-sm font-medium">🎬 Vídeo de {totalDuration}s ({scenes.length} cena{scenes.length > 1 ? "s" : ""})</p>
           <div className="space-y-1">
             {scenes.map((s, i) => (
               <div key={i} className="flex items-center gap-2 text-sm">
@@ -262,6 +308,11 @@ function CreatePage() {
                   : <Clock className="h-4 w-4 text-muted-foreground" />}
                 <span>Cena {i + 1}/{scenes.length}</span>
                 <span className="text-muted-foreground">— {s.status === "done" ? "concluída" : s.status === "generating" ? "gerando..." : "aguardando"}</span>
+                {s.url && (
+                  <a href={s.url} target="_blank" rel="noreferrer" className="ml-auto text-xs text-primary underline">
+                    preview
+                  </a>
+                )}
               </div>
             ))}
           </div>
