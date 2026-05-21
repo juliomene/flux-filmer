@@ -278,9 +278,8 @@ export async function generateLongVideo(params: {
         }
       }
 
-      const mergeResult = await fal.subscribe("fal-ai/ffmpeg-api/compose", {
-        input: mergeInput as unknown as { tracks: unknown[] },
-      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mergeResult = await fal.subscribe("fal-ai/ffmpeg-api/compose", { input: mergeInput as any });
       const data = mergeResult.data as { video_url?: string; video?: { url: string } };
       merged_url = data.video_url ?? data.video?.url ?? clips[clips.length - 1];
     } catch {
