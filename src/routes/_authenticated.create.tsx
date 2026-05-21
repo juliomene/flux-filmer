@@ -14,7 +14,7 @@ import { Loader2, Film, Eye, EyeOff, Download, ExternalLink, CheckCircle2, Clock
 import { toast } from "sonner";
 import { InputImagePicker } from "@/components/app/InputImagePicker";
 import { useSettings } from "@/stores/settings";
-import { VIDEO_MODELS, VIDEO_QUALITIES, FORMATS, LANGUAGES, generateLongVideo, applyOverlaysToVideo, OVERLAY_PRESETS, type OverlayItem } from "@/lib/fal-client";
+import { VIDEO_MODELS, VIDEO_QUALITIES, FORMATS, ALL_LANGUAGES, generateLongVideo, applyOverlaysToVideo, OVERLAY_PRESETS, type OverlayItem } from "@/lib/fal-client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/create")({
@@ -276,7 +276,7 @@ function CreatePage() {
           <Select value={language} onValueChange={setLanguage}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {LANGUAGES.map((l) => <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>)}
+              {ALL_LANGUAGES.map((l) => <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>)}
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">Aplicado a texto e fala dentro do vídeo.</p>

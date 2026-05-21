@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, Send, Settings2, Paperclip, Download, X } from "lucide-react";
 import { sendChatMessage } from "@/lib/chat.functions";
-import { LANGUAGES } from "@/lib/fal-client";
+import { ALL_LANGUAGES } from "@/lib/fal-client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -447,7 +447,7 @@ function ConfigPanel({
             <div>
               <Label className="text-xs">Idioma</Label>
               <div className="mt-1 flex flex-wrap gap-2">
-                {LANGUAGES.map((l) => (
+                {ALL_LANGUAGES.map((l) => (
                   <Chip key={l.code} active={cfg.language === l.code} onClick={() => patch({ language: l.code })}>
                     {l.label}
                   </Chip>
