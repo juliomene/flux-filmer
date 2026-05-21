@@ -10,12 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Film, Eye, EyeOff, Download, ExternalLink, CheckCircle2, Clock, Music } from "lucide-react";
+import { Loader2, Film, Eye, EyeOff, Download, ExternalLink, CheckCircle2, Clock, Music, Languages } from "lucide-react";
 import { toast } from "sonner";
 import { InputImagePicker } from "@/components/app/InputImagePicker";
 import { useSettings } from "@/stores/settings";
-import { VIDEO_MODELS, VIDEO_QUALITIES, FORMATS, generateLongVideo } from "@/lib/fal-client";
-import { Switch } from "@/components/ui/switch";
+import { VIDEO_MODELS, VIDEO_QUALITIES, FORMATS, LANGUAGES, generateLongVideo, applyOverlaysToVideo, OVERLAY_PRESETS, type OverlayItem } from "@/lib/fal-client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/create")({
@@ -30,7 +29,17 @@ type SceneState = { status: "pending" | "generating" | "done" | "error"; url?: s
 
 function CreatePage() {
   const qc = useQueryClient();
-  const { falApiKey, setFalApiKey, selectedVideoModel, setSelectedVideoModel, selectedFormat, setSelectedFormat, sceneDuration, setSceneDuration, totalDuration, setTotalDuration } = useSettings();
+  const {
+    falApiKey, setFalApiKey,
+    selectedVideoModel, setSelectedVideoModel,
+    selectedFormat, setSelectedFormat,
+    sceneDuration, setSceneDuration,
+    totalDuration, setTotalDuration,
+    language, setLanguage,
+    audioType, setAudioType,
+    audioPrompt, setAudioPrompt,
+    style, setStyle,
+  } = useSettings();
 
   const [prompt, setPrompt] = useState("");
   const [inputImage, setInputImage] = useState("");
@@ -38,8 +47,7 @@ function CreatePage() {
   const [scenes, setScenes] = useState<SceneState[]>([]);
   const [progressMsg, setProgressMsg] = useState("");
   const [videoQuality, setVideoQuality] = useState<"standard" | "pro">("standard");
-  const [withAudio, setWithAudio] = useState(false);
-  const [audioPrompt, setAudioPrompt] = useState("");
+  const [overlays, setOverlays] = useState<OverlayItem[]>([]);
 
   const model = VIDEO_MODELS.find((m) => m.id === selectedVideoModel) ?? VIDEO_MODELS[0];
   const effSceneDur = Math.min(sceneDuration, model.max_duration) as 5 | 10;
@@ -47,8 +55,13 @@ function CreatePage() {
   const qMult = VIDEO_QUALITIES.find((q) => q.id === videoQuality)?.price_multiplier ?? 1;
   const perScene = (effSceneDur === 10 ? model.cost_per_10s : model.cost_per_5s) * qMult;
   const videoCost = perScene * sceneCount;
-  const audioCost = withAudio ? totalDuration * 0.01 : 0;
+  const audioCost = audioType !== "none" ? totalDuration * 0.01 : 0;
   const totalCost = (videoCost + audioCost).toFixed(2);
+  const klingSpeechWarning = audioType === "speech" || audioType === "both"
+    ? model.id.includes("kling")
+      ? "⚠️ Kling não gera fala sincronizada nativamente. Use xAI Grok ou Veo3 para diálogo."
+      : null
+    : null;
 
   const history = useQuery({
     queryKey: ["videos-history"],
@@ -79,8 +92,12 @@ function CreatePage() {
         sceneDuration: effSceneDur,
         formatId: selectedFormat,
         image_url: inputImage || undefined,
-        withAudio,
-        audioPrompt: withAudio ? (audioPrompt || `cinematic ambient soundtrack for: ${prompt}`) : undefined,
+        language,
+        style,
+        audioType,
+        audioPrompt: audioType !== "none"
+          ? (audioPrompt || `cinematic background music for: ${prompt}, no vocals`)
+          : undefined,
         onSceneProgress: (done, total, msg) => {
           setProgressMsg(msg);
           setScenes((prev) => prev.map((s, i) => {
@@ -94,7 +111,13 @@ function CreatePage() {
         },
       });
 
-      const finalUrl = merged_url ?? clips[clips.length - 1] ?? "";
+      let finalUrl = merged_url ?? clips[clips.length - 1] ?? "";
+
+      // Aplica overlays se houver
+      if (finalUrl && overlays.length > 0) {
+        setProgressMsg("Aplicando overlays...");
+        finalUrl = await applyOverlaysToVideo({ apiKey: falApiKey, videoUrl: finalUrl, overlays });
+      }
 
       try {
         const { data: { user } } = await supabase.auth.getUser();
