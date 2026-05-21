@@ -13,50 +13,50 @@ export function configureFal(apiKey: string) {
 // ── Idiomas suportados ──────────────────────────────────────────
 export const LANGUAGES = [
   { code: "Portuguese", label: "🇧🇷 Português" },
-  { code: "English",    label: "🇺🇸 English" },
-  { code: "Spanish",    label: "🇪🇸 Español" },
-  { code: "French",     label: "🇫🇷 Français" },
-  { code: "Italian",    label: "🇮🇹 Italiano" },
-  { code: "German",     label: "🇩🇪 Deutsch" },
-  { code: "Japanese",   label: "🇯🇵 日本語" },
-  { code: "Chinese",    label: "🇨🇳 中文" },
-  { code: "Arabic",     label: "🇸🇦 العربية" },
+  { code: "English", label: "🇺🇸 English" },
+  { code: "Spanish", label: "🇪🇸 Español" },
+  { code: "French", label: "🇫🇷 Français" },
+  { code: "Italian", label: "🇮🇹 Italiano" },
+  { code: "German", label: "🇩🇪 Deutsch" },
+  { code: "Japanese", label: "🇯🇵 日本語" },
+  { code: "Chinese", label: "🇨🇳 中文" },
+  { code: "Arabic", label: "🇸🇦 العربية" },
 ] as const;
 
 // Lista ampliada — todos os idiomas suportados pelos modelos da fal.ai (Kling, Veo, Grok).
 // A IA traduz a copy automaticamente para o idioma escolhido via âncora do prompt.
 export const EXTRA_LANGUAGES = [
-  { code: "Korean",      label: "🇰🇷 한국어" },
-  { code: "Russian",     label: "🇷🇺 Русский" },
-  { code: "Hindi",       label: "🇮🇳 हिन्दी" },
-  { code: "Turkish",     label: "🇹🇷 Türkçe" },
-  { code: "Dutch",       label: "🇳🇱 Nederlands" },
-  { code: "Polish",      label: "🇵🇱 Polski" },
-  { code: "Swedish",     label: "🇸🇪 Svenska" },
-  { code: "Norwegian",   label: "🇳🇴 Norsk" },
-  { code: "Danish",      label: "🇩🇰 Dansk" },
-  { code: "Finnish",     label: "🇫🇮 Suomi" },
-  { code: "Greek",       label: "🇬🇷 Ελληνικά" },
-  { code: "Hebrew",      label: "🇮🇱 עברית" },
-  { code: "Thai",        label: "🇹🇭 ไทย" },
-  { code: "Vietnamese",  label: "🇻🇳 Tiếng Việt" },
-  { code: "Indonesian",  label: "🇮🇩 Bahasa Indonesia" },
-  { code: "Malay",       label: "🇲🇾 Bahasa Melayu" },
-  { code: "Filipino",    label: "🇵🇭 Filipino" },
-  { code: "Ukrainian",   label: "🇺🇦 Українська" },
-  { code: "Czech",       label: "🇨🇿 Čeština" },
-  { code: "Romanian",    label: "🇷🇴 Română" },
-  { code: "Hungarian",   label: "🇭🇺 Magyar" },
-  { code: "Bulgarian",   label: "🇧🇬 Български" },
-  { code: "Croatian",    label: "🇭🇷 Hrvatski" },
-  { code: "Serbian",     label: "🇷🇸 Српски" },
-  { code: "Slovak",      label: "🇸🇰 Slovenčina" },
-  { code: "Catalan",     label: "🏴 Català" },
-  { code: "Persian",     label: "🇮🇷 فارسی" },
-  { code: "Bengali",     label: "🇧🇩 বাংলা" },
-  { code: "Urdu",        label: "🇵🇰 اردو" },
-  { code: "Tamil",       label: "🇮🇳 தமிழ்" },
-  { code: "Swahili",     label: "🇰🇪 Kiswahili" },
+  { code: "Korean", label: "🇰🇷 한국어" },
+  { code: "Russian", label: "🇷🇺 Русский" },
+  { code: "Hindi", label: "🇮🇳 हिन्दी" },
+  { code: "Turkish", label: "🇹🇷 Türkçe" },
+  { code: "Dutch", label: "🇳🇱 Nederlands" },
+  { code: "Polish", label: "🇵🇱 Polski" },
+  { code: "Swedish", label: "🇸🇪 Svenska" },
+  { code: "Norwegian", label: "🇳🇴 Norsk" },
+  { code: "Danish", label: "🇩🇰 Dansk" },
+  { code: "Finnish", label: "🇫🇮 Suomi" },
+  { code: "Greek", label: "🇬🇷 Ελληνικά" },
+  { code: "Hebrew", label: "🇮🇱 עברית" },
+  { code: "Thai", label: "🇹🇭 ไทย" },
+  { code: "Vietnamese", label: "🇻🇳 Tiếng Việt" },
+  { code: "Indonesian", label: "🇮🇩 Bahasa Indonesia" },
+  { code: "Malay", label: "🇲🇾 Bahasa Melayu" },
+  { code: "Filipino", label: "🇵🇭 Filipino" },
+  { code: "Ukrainian", label: "🇺🇦 Українська" },
+  { code: "Czech", label: "🇨🇿 Čeština" },
+  { code: "Romanian", label: "🇷🇴 Română" },
+  { code: "Hungarian", label: "🇭🇺 Magyar" },
+  { code: "Bulgarian", label: "🇧🇬 Български" },
+  { code: "Croatian", label: "🇭🇷 Hrvatski" },
+  { code: "Serbian", label: "🇷🇸 Српски" },
+  { code: "Slovak", label: "🇸🇰 Slovenčina" },
+  { code: "Catalan", label: "🏴 Català" },
+  { code: "Persian", label: "🇮🇷 فارسی" },
+  { code: "Bengali", label: "🇧🇩 বাংলা" },
+  { code: "Urdu", label: "🇵🇰 اردو" },
+  { code: "Tamil", label: "🇮🇳 தமிழ்" },
+  { code: "Swahili", label: "🇰🇪 Kiswahili" },
 ] as const;
 
 export const ALL_LANGUAGES = [...LANGUAGES, ...EXTRA_LANGUAGES] as const;
@@ -68,30 +68,206 @@ export async function uploadToFal(apiKey: string, file: File): Promise<string> {
 }
 
 export const IMAGE_MODELS = [
-  { id: "fal-ai/flux/schnell", name: "Flux Schnell", provider: "fal.ai", speed: "Rápido", cost_per_image: "$0.003", supports_image_input: false },
-  { id: "fal-ai/flux-pro/v1.1", name: "Flux Pro 1.1", provider: "fal.ai", speed: "Médio", cost_per_image: "$0.04", supports_image_input: false },
-  { id: "xai/grok-imagine-image", name: "Grok Imagine", provider: "xAI", speed: "Médio", cost_per_image: "$0.02", supports_image_input: false },
-  { id: "xai/grok-imagine-image/edit", name: "Grok Imagine Edit", provider: "xAI", speed: "Médio", cost_per_image: "$0.022", supports_image_input: true },
-  { id: "fal-ai/gpt-image-1/text-to-image", name: "GPT Image 1", provider: "OpenAI", speed: "Lento", cost_per_image: "$0.04", supports_image_input: false },
-  { id: "fal-ai/imagen3", name: "Imagen 3", provider: "Google", speed: "Médio", cost_per_image: "$0.04", supports_image_input: false },
+  {
+    id: "fal-ai/flux/schnell",
+    name: "Flux Schnell",
+    provider: "fal.ai",
+    speed: "Rápido",
+    cost_per_image: "$0.003",
+    supports_image_input: false,
+  },
+  {
+    id: "fal-ai/flux-pro/v1.1",
+    name: "Flux Pro 1.1",
+    provider: "fal.ai",
+    speed: "Médio",
+    cost_per_image: "$0.04",
+    supports_image_input: false,
+  },
+  {
+    id: "xai/grok-imagine-image",
+    name: "Grok Imagine",
+    provider: "xAI",
+    speed: "Médio",
+    cost_per_image: "$0.02",
+    supports_image_input: false,
+  },
+  {
+    id: "xai/grok-imagine-image/edit",
+    name: "Grok Imagine Edit",
+    provider: "xAI",
+    speed: "Médio",
+    cost_per_image: "$0.022",
+    supports_image_input: true,
+  },
+  {
+    id: "fal-ai/gpt-image-1/text-to-image",
+    name: "GPT Image 1",
+    provider: "OpenAI",
+    speed: "Lento",
+    cost_per_image: "$0.04",
+    supports_image_input: false,
+  },
+  {
+    id: "fal-ai/imagen3",
+    name: "Imagen 3",
+    provider: "Google",
+    speed: "Médio",
+    cost_per_image: "$0.04",
+    supports_image_input: false,
+  },
 ] as const;
 
 export type ImageModel = (typeof IMAGE_MODELS)[number];
 
 export const VIDEO_MODELS = [
-  { id: "fal-ai/kling-video/v1.6/standard/text-to-video", id_img: "fal-ai/kling-video/v1.6/standard/image-to-video", name: "Kling 1.6 Standard", provider: "Kling", quality: "480p", speed: "Normal", cost_per_5s: 0.42, cost_per_10s: 0.84, max_duration: 10, has_native_audio: false, note: "" },
-  { id: "fal-ai/kling-video/v1.6/pro/text-to-video", id_img: "fal-ai/kling-video/v1.6/pro/image-to-video", name: "Kling 1.6 Pro", provider: "Kling", quality: "720p", speed: "Normal", cost_per_5s: 0.84, cost_per_10s: 1.68, max_duration: 10, has_native_audio: false, note: "" },
-  { id: "xai/grok-imagine-video/text-to-video", id_img: "xai/grok-imagine-video/image-to-video", name: "Grok Imagine Video 480p", provider: "xAI", quality: "480p", speed: "Rápido", cost_per_5s: 0.25, cost_per_10s: 0.50, max_duration: 10, has_native_audio: true, resolution_param: "480p", note: "Mais rápido e econômico · Áudio nativo" },
-  { id: "xai/grok-imagine-video/text-to-video", id_img: "xai/grok-imagine-video/image-to-video", name: "Grok Imagine Video 720p", provider: "xAI", quality: "720p", speed: "Normal", cost_per_5s: 0.50, cost_per_10s: 1.00, max_duration: 10, has_native_audio: true, resolution_param: "720p", note: "Alta qualidade · Áudio nativo sincronizado" },
-  { id: "fal-ai/veo3", id_img: "fal-ai/veo3/image-to-video", name: "Google Veo 3", provider: "Google", quality: "1080p", speed: "Normal", cost_per_5s: 0.75, cost_per_10s: 1.50, max_duration: 8, has_native_audio: true, note: "Áudio nativo · Máxima qualidade" },
+  {
+    id: "fal-ai/kling-video/v1.6/standard/text-to-video",
+    id_img: "fal-ai/kling-video/v1.6/standard/image-to-video",
+    name: "Kling 1.6 Standard",
+    provider: "Kling",
+    quality: "480p",
+    speed: "Normal",
+    cost_per_5s: 0.42,
+    cost_per_10s: 0.84,
+    max_duration: 10,
+    has_native_audio: false,
+    note: "",
+  },
+  {
+    id: "fal-ai/kling-video/v1.6/pro/text-to-video",
+    id_img: "fal-ai/kling-video/v1.6/pro/image-to-video",
+    name: "Kling 1.6 Pro",
+    provider: "Kling",
+    quality: "720p",
+    speed: "Normal",
+    cost_per_5s: 0.84,
+    cost_per_10s: 1.68,
+    max_duration: 10,
+    has_native_audio: false,
+    note: "",
+  },
+  {
+    id: "xai/grok-imagine-video/text-to-video",
+    id_img: "xai/grok-imagine-video/image-to-video",
+    name: "Grok Imagine Video 480p",
+    provider: "xAI",
+    quality: "480p",
+    speed: "Rápido",
+    cost_per_5s: 0.25,
+    cost_per_10s: 0.5,
+    max_duration: 10,
+    has_native_audio: true,
+    resolution_param: "480p",
+    note: "Mais rápido e econômico · Áudio nativo",
+  },
+  {
+    id: "xai/grok-imagine-video/text-to-video",
+    id_img: "xai/grok-imagine-video/image-to-video",
+    name: "Grok Imagine Video 720p",
+    provider: "xAI",
+    quality: "720p",
+    speed: "Normal",
+    cost_per_5s: 0.5,
+    cost_per_10s: 1.0,
+    max_duration: 10,
+    has_native_audio: true,
+    resolution_param: "720p",
+    note: "Alta qualidade · Áudio nativo sincronizado",
+  },
+  {
+    id: "fal-ai/veo3",
+    id_img: "fal-ai/veo3/image-to-video",
+    name: "Google Veo 3",
+    provider: "Google",
+    quality: "1080p",
+    speed: "Normal",
+    cost_per_5s: 0.75,
+    cost_per_10s: 1.5,
+    max_duration: 8,
+    has_native_audio: true,
+    note: "Áudio nativo · Máxima qualidade",
+  },
   // ── MiniMax / Hailuo ──
-  { id: "fal-ai/minimax/hailuo-2.3/standard/text-to-video", id_img: "fal-ai/minimax/hailuo-2.3/standard/image-to-video", name: "Hailuo 2.3 Standard", provider: "MiniMax", quality: "768p", speed: "Normal", cost_per_5s: 0.23, cost_per_10s: 0.45, max_duration: 10, has_native_audio: false, note: "Alta consistência visual entre cenas" },
-  { id: "fal-ai/minimax/hailuo-2.3/pro/text-to-video", id_img: "fal-ai/minimax/hailuo-2.3/pro/image-to-video", name: "Hailuo 2.3 Pro", provider: "MiniMax", quality: "1080p", speed: "Normal", cost_per_5s: 0.45, cost_per_10s: 0.90, max_duration: 10, has_native_audio: false, note: "1080p — melhor qualidade MiniMax" },
-  { id: "fal-ai/minimax/hailuo-2.3-fast/standard/text-to-video", id_img: "fal-ai/minimax/hailuo-2.3-fast/standard/image-to-video", name: "Hailuo 2.3 Fast Standard", provider: "MiniMax", quality: "768p", speed: "Rápido", cost_per_5s: 0.18, cost_per_10s: 0.35, max_duration: 10, has_native_audio: false, note: "Versão rápida e econômica" },
-  { id: "fal-ai/minimax/hailuo-2.3-fast/pro/text-to-video", id_img: "fal-ai/minimax/hailuo-2.3-fast/pro/image-to-video", name: "Hailuo 2.3 Fast Pro", provider: "MiniMax", quality: "1080p", speed: "Rápido", cost_per_5s: 0.35, cost_per_10s: 0.70, max_duration: 10, has_native_audio: false, note: "Rápido + 1080p" },
+  {
+    id: "fal-ai/minimax/hailuo-2.3/standard/text-to-video",
+    id_img: "fal-ai/minimax/hailuo-2.3/standard/image-to-video",
+    name: "Hailuo 2.3 Standard",
+    provider: "MiniMax",
+    quality: "768p",
+    speed: "Normal",
+    cost_per_5s: 0.23,
+    cost_per_10s: 0.45,
+    max_duration: 10,
+    has_native_audio: false,
+    note: "Alta consistência visual entre cenas",
+  },
+  {
+    id: "fal-ai/minimax/hailuo-2.3/pro/text-to-video",
+    id_img: "fal-ai/minimax/hailuo-2.3/pro/image-to-video",
+    name: "Hailuo 2.3 Pro",
+    provider: "MiniMax",
+    quality: "1080p",
+    speed: "Normal",
+    cost_per_5s: 0.45,
+    cost_per_10s: 0.9,
+    max_duration: 10,
+    has_native_audio: false,
+    note: "1080p — melhor qualidade MiniMax",
+  },
+  {
+    id: "fal-ai/minimax/hailuo-2.3-fast/standard/text-to-video",
+    id_img: "fal-ai/minimax/hailuo-2.3-fast/standard/image-to-video",
+    name: "Hailuo 2.3 Fast Standard",
+    provider: "MiniMax",
+    quality: "768p",
+    speed: "Rápido",
+    cost_per_5s: 0.18,
+    cost_per_10s: 0.35,
+    max_duration: 10,
+    has_native_audio: false,
+    note: "Versão rápida e econômica",
+  },
+  {
+    id: "fal-ai/minimax/hailuo-2.3-fast/pro/text-to-video",
+    id_img: "fal-ai/minimax/hailuo-2.3-fast/pro/image-to-video",
+    name: "Hailuo 2.3 Fast Pro",
+    provider: "MiniMax",
+    quality: "1080p",
+    speed: "Rápido",
+    cost_per_5s: 0.35,
+    cost_per_10s: 0.7,
+    max_duration: 10,
+    has_native_audio: false,
+    note: "Rápido + 1080p",
+  },
   // ── ByteDance / Seedance ──
-  { id: "bytedance/seedance-2.0/fast/text-to-video", id_img: "bytedance/seedance-2.0/fast/image-to-video", name: "Seedance 2.0 Fast", provider: "ByteDance", quality: "720p", speed: "Rápido", cost_per_5s: 1.21, cost_per_10s: 2.42, max_duration: 15, has_native_audio: true, note: "Áudio nativo sincronizado · Física real · Câmera cinemática" },
-  { id: "bytedance/seedance-2.0/text-to-video", id_img: "bytedance/seedance-2.0/image-to-video", name: "Seedance 2.0 Pro", provider: "ByteDance", quality: "1080p", speed: "Normal", cost_per_5s: 1.52, cost_per_10s: 3.03, max_duration: 15, has_native_audio: true, note: "1080p · Áudio nativo · Máxima qualidade ByteDance" },
+  {
+    id: "bytedance/seedance-2.0/fast/text-to-video",
+    id_img: "bytedance/seedance-2.0/fast/image-to-video",
+    name: "Seedance 2.0 Fast",
+    provider: "ByteDance",
+    quality: "720p",
+    speed: "Rápido",
+    cost_per_5s: 1.21,
+    cost_per_10s: 2.42,
+    max_duration: 15,
+    has_native_audio: true,
+    note: "Áudio nativo sincronizado · Física real · Câmera cinemática",
+  },
+  {
+    id: "bytedance/seedance-2.0/text-to-video",
+    id_img: "bytedance/seedance-2.0/image-to-video",
+    name: "Seedance 2.0 Pro",
+    provider: "ByteDance",
+    quality: "1080p",
+    speed: "Normal",
+    cost_per_5s: 1.52,
+    cost_per_10s: 3.03,
+    max_duration: 15,
+    has_native_audio: true,
+    note: "1080p · Áudio nativo · Máxima qualidade ByteDance",
+  },
 ] as const;
 
 export type VideoModel = (typeof VIDEO_MODELS)[number];
@@ -119,7 +295,12 @@ export const IMAGE_QUALITIES = [
 ] as const;
 
 export const VIDEO_QUALITIES = [
-  { id: "standard", label: "Standard", description: "480p — mais rápido e econômico", price_multiplier: 1 },
+  {
+    id: "standard",
+    label: "Standard",
+    description: "480p — mais rápido e econômico",
+    price_multiplier: 1,
+  },
   { id: "pro", label: "Pro", description: "720p — melhor qualidade", price_multiplier: 2 },
 ] as const;
 
@@ -146,7 +327,12 @@ export async function generateImage(params: {
   let input: Record<string, unknown> = { prompt: params.prompt };
 
   if (params.modelId.startsWith("xai/")) {
-    input = { prompt: params.prompt, aspect_ratio: aspect, resolution: params.quality, num_images: 1 };
+    input = {
+      prompt: params.prompt,
+      aspect_ratio: aspect,
+      resolution: params.quality,
+      num_images: 1,
+    };
     if (params.image_url && params.modelId.includes("/edit")) {
       input.image_urls = [params.image_url];
     }
@@ -256,9 +442,60 @@ export async function generateClip(params: {
     },
   });
 
-  const data = result.data as { video?: { url: string }; output?: string };
-  const url = data.video?.url ?? data.output ?? "";
+  const data = result.data as {
+    video?: { url: string };
+    video_url?: string;
+    output_url?: string;
+    output?: string;
+    url?: string;
+  };
+  const url = data.video?.url ?? data.video_url ?? data.output_url ?? data.output ?? data.url ?? "";
   return { url };
+}
+
+async function mergeVideoClips(
+  apiKey: string,
+  clips: string[],
+  onProgress?: (msg: string) => void,
+): Promise<string | null> {
+  if (clips.length <= 1) return clips[0] ?? null;
+  configureFal(apiKey);
+  onProgress?.("Unindo cenas em um único MP4...");
+  try {
+    const res = await fal.subscribe("fal-ai/ffmpeg-api/merge-videos", {
+      input: { video_urls: clips, target_fps: 24 },
+      logs: true,
+    });
+    const d = res.data as {
+      video?: { url: string };
+      video_url?: string;
+      output_url?: string;
+      url?: string;
+    };
+    return d.video?.url ?? d.video_url ?? d.output_url ?? d.url ?? null;
+  } catch (primaryError) {
+    try {
+      const res = await fal.subscribe("fal-ai/ffmpeg-api", {
+        input: {
+          function: "concat_videos",
+          video_urls: clips,
+          inputs: clips.map((url, i) => ({ type: "video", url, label: `c${i}` })),
+          output_format: "mp4",
+        },
+      });
+      const d = res.data as {
+        video?: { url: string };
+        video_url?: string;
+        output_url?: string;
+        url?: string;
+      };
+      return d.video?.url ?? d.video_url ?? d.output_url ?? d.url ?? null;
+    } catch {
+      // eslint-disable-next-line no-console
+      console.error("[fal-client] falhou ao unir os clipes", primaryError);
+      return null;
+    }
+  }
 }
 
 export function buildScenePrompts(params: {
@@ -270,25 +507,91 @@ export function buildScenePrompts(params: {
   const { userPrompt, totalScenes, language, style = "cinematic" } = params;
 
   const visualAnchor = [
-    `IMPORTANT: Keep exact same character appearance, same face, same clothes, same hair throughout all scenes.`,
-    `Same lighting style. Same color grading. Same ${style} camera style.`,
-    `DO NOT change the character. DO NOT change the setting unless the story requires it.`,
+    `IMPORTANT CONTINUITY LOCK: Keep exact same character/model appearance, same face, same clothes, same hair, same body, same environment, same props, same lighting, same color grading and same ${style} camera style across every scene.`,
+    `This is one continuous video split into short clips for generation. Every new scene must continue directly from the previous frame, not restart the story and not become a new video.`,
+    `DO NOT change the character/model. DO NOT change the setting/cenario unless the current scene text explicitly says so. DO NOT repeat previous dialogue.`,
     `LANGUAGE RULE: The user prompt may be written in any language, but ALL spoken dialogue, voiceover, narration, captions, signs, and on-screen text in the final video MUST be translated to and rendered exclusively in ${language}. Do not mix languages. Translate any quoted dialogue from the prompt into natural, native-sounding ${language}, preserving meaning, tone and intent.`,
   ].join(" ");
 
   if (totalScenes === 1) return [`${visualAnchor} ${userPrompt}`];
 
-  // Cenas com beats diferentes — cada índice gera texto distinto garantido.
-  const parts = totalScenes <= 3
-    ? ["beginning of the story", "middle", "end"]
-    : ["beginning of the story", "early development", "middle", "climax", "end"];
-  const prompts = Array.from({ length: totalScenes }, (_, i) => {
-    const part = parts[Math.min(i, parts.length - 1)];
-    return `${visualAnchor} ${userPrompt} — ${part}, scene ${i + 1} of ${totalScenes}, cinematic continuity`;
-  });
+  const sceneBlocks = splitPromptIntoSceneBlocks(userPrompt, totalScenes);
+  const sharedContext = extractSharedVisualContext(userPrompt);
+  const prompts = sceneBlocks.map((block, i) =>
+    [
+      visualAnchor,
+      `Scene ${i + 1} of ${totalScenes}. Continuation of previous scene. Chronological segment ${i + 1}/${totalScenes}.`,
+      `Shared visual context to preserve exactly: ${sharedContext}`,
+      `Current scene only — do not speak or show text from other scenes: ${block}`,
+      `Dialogue rule: speak ONLY the dialogue/chunk present in Current scene. If the user's original prompt contains dialogue in another language, translate ONLY this current chunk to ${language}. Never repeat scene 1 dialogue in scene 2.`,
+    ].join("\n"),
+  );
   // eslint-disable-next-line no-console
   console.log("[fal-client] scene prompts:", prompts);
   return prompts;
+}
+
+function splitPromptIntoSceneBlocks(prompt: string, totalScenes: number): string[] {
+  const normalized = prompt.trim();
+  const explicit = normalized
+    .split(/(?=^\s*(?:🎬\s*)?(?:PARTE|CENA|SCENE)\s*\d+\b)/gim)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (explicit.length >= totalScenes) return normalizeSceneBlockCount(explicit, totalScenes);
+
+  const paragraphs = normalized
+    .split(/\n{2,}|(?<=[.!?])\s+(?=[A-ZÀ-Ú“"'])/g)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (paragraphs.length >= totalScenes) return normalizeSceneBlockCount(paragraphs, totalScenes);
+
+  const words = normalized.split(/\s+/).filter(Boolean);
+  const perScene = Math.max(1, Math.ceil(words.length / totalScenes));
+  return Array.from({ length: totalScenes }, (_, i) => {
+    const chunk = words
+      .slice(i * perScene, (i + 1) * perScene)
+      .join(" ")
+      .trim();
+    return chunk || `continuation beat ${i + 1}`;
+  });
+}
+
+function normalizeSceneBlockCount(blocks: string[], totalScenes: number): string[] {
+  if (blocks.length === totalScenes) return blocks;
+  if (blocks.length < totalScenes) {
+    return Array.from(
+      { length: totalScenes },
+      (_, i) => blocks[i] ?? `silent continuation beat ${i + 1}`,
+    );
+  }
+  const out = blocks.slice(0, totalScenes - 1);
+  out.push(blocks.slice(totalScenes - 1).join("\n\n"));
+  return out;
+}
+
+function extractSharedVisualContext(prompt: string): string {
+  const withoutDialogue = prompt
+    .replace(
+      /(?:di[aá]logo|dialogue|fala|narra[cç][aã]o)\s*\([^)]*\)?\s*:\s*[\s\S]*?(?=\n\s*(?:🎬\s*)?(?:PARTE|CENA|SCENE)\s*\d+\b|$)/gim,
+      "",
+    )
+    .replace(/“[^”]{3,}”|"[^"]{3,}"/g, "")
+    .trim();
+  return (
+    withoutDialogue ||
+    "same subject, same wardrobe, same environment and same camera setup described by the user"
+  );
+}
+
+function extractDialogueText(sceneBlock: string): string {
+  const quoted = [...sceneBlock.matchAll(/[“"]([^”"]{2,})[”"]/g)]
+    .map((m) => m[1].trim())
+    .filter(Boolean);
+  if (quoted.length) return quoted.join(" ");
+  const dialogueMatch = sceneBlock.match(
+    /(?:di[aá]logo|dialogue|fala|narra[cç][aã]o)\s*\([^)]*\)?\s*:\s*([\s\S]*)/i,
+  );
+  return (dialogueMatch?.[1] ?? sceneBlock).trim();
 }
 
 // CONSISTÊNCIA ENTRE CENAS:
@@ -325,13 +628,17 @@ export async function generateLongVideo(params: {
     language,
     style: params.style,
   });
+  const sceneBlocks =
+    totalScenes > 1 ? splitPromptIntoSceneBlocks(params.prompt, totalScenes) : [params.prompt];
   const quality = params.quality ?? "standard";
   const seed = params.projectSeed ?? Math.floor(Math.random() * 100000);
   const modelId = resolveModelQuality(params.modelConfig.id, quality);
   const modelIdImg = resolveModelQuality(params.modelConfig.id_img, quality);
-  const hasNativeAudio = (params.modelConfig as { has_native_audio?: boolean }).has_native_audio === true;
+  const hasNativeAudio =
+    (params.modelConfig as { has_native_audio?: boolean }).has_native_audio === true;
   const wantsAudio = audioType !== "none";
   const useNativeAudio = hasNativeAudio && wantsAudio;
+  const useExternalSpeech = !useNativeAudio && (audioType === "speech" || audioType === "both");
 
   const clips: string[] = [];
   let lastFrameUrl: string | undefined = params.image_url;
@@ -348,26 +655,51 @@ export async function generateLongVideo(params: {
       seed,
       withAudio: useNativeAudio,
       quality,
-      modelResolution: (params.modelConfig as unknown as { resolution_param?: string }).resolution_param,
+      modelResolution: (params.modelConfig as unknown as { resolution_param?: string })
+        .resolution_param,
       onProgress: (msg) => params.onSceneProgress?.(i, scenes.length, msg),
     });
-    clips.push(clip.url);
-    params.onClipReady?.(i, clip.url);
+    let sceneUrl = clip.url;
+
+    if (useExternalSpeech) {
+      params.onSceneProgress?.(i, scenes.length, `Gerando fala da cena ${i + 1}...`);
+      const audio = await generateSceneTTS({
+        apiKey: params.apiKey,
+        text: extractDialogueText(sceneBlocks[i]) || sceneBlocks[i],
+        language,
+      });
+      if (audio) {
+        params.onSceneProgress?.(i, scenes.length, `Sincronizando fala da cena ${i + 1}...`);
+        sceneUrl = await muxVideoAudio({
+          apiKey: params.apiKey,
+          videoUrl: clip.url,
+          audioUrl: audio,
+        });
+      }
+    }
+
+    clips.push(sceneUrl);
+    params.onClipReady?.(i, sceneUrl);
 
     if (i < scenes.length - 1) {
-      lastFrameUrl = undefined;
+      lastFrameUrl = params.image_url;
       try {
-        const frame = await fal.subscribe("fal-ai/ffmpeg-api", {
+        const frame = await fal.subscribe("fal-ai/ffmpeg-api/extract-frame", {
           input: {
-            function: "extract_frame",
-            input_url: clip.url,
-            timestamp: Math.max(0, params.sceneDuration - 0.5),
+            video_url: clip.url,
+            frame_type: "last",
           },
         });
-        const fd = frame.data as { image_url?: string; url?: string; image?: { url: string } };
-        lastFrameUrl = fd.image_url ?? fd.url ?? fd.image?.url;
+        const fd = frame.data as {
+          images?: { url: string }[];
+          image_url?: string;
+          url?: string;
+          image?: { url: string };
+        };
+        lastFrameUrl =
+          fd.images?.[0]?.url ?? fd.image_url ?? fd.url ?? fd.image?.url ?? params.image_url;
       } catch {
-        lastFrameUrl = undefined;
+        lastFrameUrl = params.image_url;
       }
       // eslint-disable-next-line no-console
       console.log(`[fal-client] cena ${i + 1} concluída. próxima usará referência:`, lastFrameUrl);
@@ -383,7 +715,9 @@ export async function generateLongVideo(params: {
     try {
       const audioRes = await fal.subscribe("fal-ai/stable-audio", {
         input: {
-          prompt: params.audioPrompt || `${params.prompt}, background music, ${params.style ?? "cinematic"}, no vocals`,
+          prompt:
+            params.audioPrompt ||
+            `${params.prompt}, background music, ${params.style ?? "cinematic"}, no vocals`,
           seconds_total: params.totalDuration,
           steps: 100,
         },
@@ -395,23 +729,17 @@ export async function generateLongVideo(params: {
     }
   }
 
-  let merged_url: string | null = null;
-  if (clips.length > 1) {
-    try {
-      const mergeInput: Record<string, unknown> = {
-        function: "concat_videos",
-        inputs: clips.map((url, i) => ({ type: "video", url, label: `c${i}` })),
-        output_format: "mp4",
-      };
-      if (audioUrl) mergeInput.audio_url = audioUrl;
-      const mergeResult = await fal.subscribe("fal-ai/ffmpeg-api", { input: mergeInput });
-      const data = mergeResult.data as { video_url?: string; output_url?: string; url?: string };
-      merged_url = data.video_url ?? data.output_url ?? data.url ?? clips[clips.length - 1];
-    } catch {
-      merged_url = clips[clips.length - 1];
-    }
-  } else {
-    merged_url = clips[0] ?? null;
+  let merged_url = await mergeVideoClips(params.apiKey, clips, (msg) =>
+    params.onSceneProgress?.(scenes.length, scenes.length, msg),
+  );
+
+  if (merged_url && audioUrl) {
+    params.onSceneProgress?.(
+      scenes.length,
+      scenes.length,
+      "Adicionando trilha musical ao vídeo final...",
+    );
+    merged_url = await muxVideoAudio({ apiKey: params.apiKey, videoUrl: merged_url, audioUrl });
   }
 
   return { clips, merged_url };
@@ -422,13 +750,13 @@ export interface OverlayItem {
   id: string;
   type: "text" | "icon" | "badge";
   content: string;
-  x: number;             // % da largura (0-100)
-  y: number;             // % da altura (0-100)
-  fontSize: number;      // px
+  x: number; // % da largura (0-100)
+  y: number; // % da altura (0-100)
+  fontSize: number; // px
   fontWeight: "normal" | "bold" | "black";
   color: string;
   bgColor: string;
-  bgOpacity: number;     // 0-100
+  bgOpacity: number; // 0-100
   bgRadius: number;
   padding: number;
   shadow: boolean;
@@ -436,12 +764,84 @@ export interface OverlayItem {
   width: "auto" | "full";
 }
 
-export const OVERLAY_PRESETS: Array<Omit<OverlayItem, "id" | "content" | "type"> & { name: string }> = [
-  { name: "Título amarelo", color: "#000000", bgColor: "#FFE600", bgOpacity: 100, fontWeight: "black", uppercase: true, bgRadius: 8, width: "full", x: 0, y: 35, fontSize: 52, padding: 16, shadow: false },
-  { name: "Badge verde CTA", color: "#FFFFFF", bgColor: "#00C853", bgOpacity: 100, fontWeight: "bold", uppercase: false, bgRadius: 30, width: "full", x: 0, y: 85, fontSize: 40, padding: 14, shadow: false },
-  { name: "Legenda preta topo", color: "#FFFFFF", bgColor: "#000000", bgOpacity: 90, fontWeight: "bold", uppercase: true, bgRadius: 0, width: "full", x: 0, y: 5, fontSize: 44, padding: 12, shadow: false },
-  { name: "Legenda preta base", color: "#FFFFFF", bgColor: "#000000", bgOpacity: 90, fontWeight: "bold", uppercase: true, bgRadius: 0, width: "full", x: 0, y: 90, fontSize: 44, padding: 12, shadow: false },
-  { name: "Badge laranja destaque", color: "#FFFFFF", bgColor: "#FF6600", bgOpacity: 100, fontWeight: "black", uppercase: false, bgRadius: 12, width: "full", x: 0, y: 10, fontSize: 48, padding: 14, shadow: true },
+export const OVERLAY_PRESETS: Array<
+  Omit<OverlayItem, "id" | "content" | "type"> & { name: string }
+> = [
+  {
+    name: "Título amarelo",
+    color: "#000000",
+    bgColor: "#FFE600",
+    bgOpacity: 100,
+    fontWeight: "black",
+    uppercase: true,
+    bgRadius: 8,
+    width: "full",
+    x: 0,
+    y: 35,
+    fontSize: 52,
+    padding: 16,
+    shadow: false,
+  },
+  {
+    name: "Badge verde CTA",
+    color: "#FFFFFF",
+    bgColor: "#00C853",
+    bgOpacity: 100,
+    fontWeight: "bold",
+    uppercase: false,
+    bgRadius: 30,
+    width: "full",
+    x: 0,
+    y: 85,
+    fontSize: 40,
+    padding: 14,
+    shadow: false,
+  },
+  {
+    name: "Legenda preta topo",
+    color: "#FFFFFF",
+    bgColor: "#000000",
+    bgOpacity: 90,
+    fontWeight: "bold",
+    uppercase: true,
+    bgRadius: 0,
+    width: "full",
+    x: 0,
+    y: 5,
+    fontSize: 44,
+    padding: 12,
+    shadow: false,
+  },
+  {
+    name: "Legenda preta base",
+    color: "#FFFFFF",
+    bgColor: "#000000",
+    bgOpacity: 90,
+    fontWeight: "bold",
+    uppercase: true,
+    bgRadius: 0,
+    width: "full",
+    x: 0,
+    y: 90,
+    fontSize: 44,
+    padding: 12,
+    shadow: false,
+  },
+  {
+    name: "Badge laranja destaque",
+    color: "#FFFFFF",
+    bgColor: "#FF6600",
+    bgOpacity: 100,
+    fontWeight: "black",
+    uppercase: false,
+    bgRadius: 12,
+    width: "full",
+    x: 0,
+    y: 10,
+    fontSize: 48,
+    padding: 14,
+    shadow: true,
+  },
 ];
 
 export async function applyOverlaysToVideo(params: {
@@ -452,27 +852,29 @@ export async function applyOverlaysToVideo(params: {
   if (!params.overlays.length) return params.videoUrl;
   configureFal(params.apiKey);
 
-  const filters = params.overlays.map((o) => {
-    const text = (o.uppercase ? o.content.toUpperCase() : o.content)
-      .replace(/\\/g, "\\\\")
-      .replace(/:/g, "\\:")
-      .replace(/'/g, "\\'");
-    const x = o.width === "full" ? "(w-text_w)/2" : `(w*${o.x / 100})`;
-    const y = `(h*${o.y / 100})`;
-    const bgAlpha = (o.bgOpacity / 100).toFixed(2);
-    const parts = [
-      `drawtext=text='${text}'`,
-      `fontsize=${o.fontSize}`,
-      `fontcolor=${o.color}`,
-      `box=1`,
-      `boxcolor=${o.bgColor}@${bgAlpha}`,
-      `boxborderw=${o.padding}`,
-      `x=${x}`,
-      `y=${y}`,
-    ];
-    if (o.shadow) parts.push(`shadowcolor=black@0.5`, `shadowx=2`, `shadowy=2`);
-    return parts.join(":");
-  }).join(",");
+  const filters = params.overlays
+    .map((o) => {
+      const text = (o.uppercase ? o.content.toUpperCase() : o.content)
+        .replace(/\\/g, "\\\\")
+        .replace(/:/g, "\\:")
+        .replace(/'/g, "\\'");
+      const x = o.width === "full" ? "(w-text_w)/2" : `(w*${o.x / 100})`;
+      const y = `(h*${o.y / 100})`;
+      const bgAlpha = (o.bgOpacity / 100).toFixed(2);
+      const parts = [
+        `drawtext=text='${text}'`,
+        `fontsize=${o.fontSize}`,
+        `fontcolor=${o.color}`,
+        `box=1`,
+        `boxcolor=${o.bgColor}@${bgAlpha}`,
+        `boxborderw=${o.padding}`,
+        `x=${x}`,
+        `y=${y}`,
+      ];
+      if (o.shadow) parts.push(`shadowcolor=black@0.5`, `shadowx=2`, `shadowy=2`);
+      return parts.join(":");
+    })
+    .join(",");
 
   try {
     const result = await fal.subscribe("fal-ai/ffmpeg-api", {
@@ -501,15 +903,19 @@ export async function extractLastFrame(params: {
 }): Promise<string | undefined> {
   configureFal(params.apiKey);
   try {
-    const frame = await fal.subscribe("fal-ai/ffmpeg-api", {
+    const frame = await fal.subscribe("fal-ai/ffmpeg-api/extract-frame", {
       input: {
-        function: "extract_frame",
-        input_url: params.videoUrl,
-        timestamp: Math.max(0, params.durationSeconds - 0.3),
+        video_url: params.videoUrl,
+        frame_type: "last",
       },
     });
-    const fd = frame.data as { image_url?: string; url?: string; image?: { url: string } };
-    return fd.image_url ?? fd.url ?? fd.image?.url;
+    const fd = frame.data as {
+      images?: { url: string }[];
+      image_url?: string;
+      url?: string;
+      image?: { url: string };
+    };
+    return fd.images?.[0]?.url ?? fd.image_url ?? fd.url ?? fd.image?.url;
   } catch {
     return undefined;
   }
@@ -544,16 +950,19 @@ export async function muxVideoAudio(params: {
 }): Promise<string> {
   configureFal(params.apiKey);
   try {
-    const res = await fal.subscribe("fal-ai/ffmpeg-api", {
+    const res = await fal.subscribe("fal-ai/ffmpeg-api/merge-audio-video", {
       input: {
-        function: "mux_audio",
         video_url: params.videoUrl,
         audio_url: params.audioUrl,
-        output_format: "mp4",
       },
     });
-    const d = res.data as { video_url?: string; output_url?: string; url?: string };
-    return d.video_url ?? d.output_url ?? d.url ?? params.videoUrl;
+    const d = res.data as {
+      video?: { url: string };
+      video_url?: string;
+      output_url?: string;
+      url?: string;
+    };
+    return d.video?.url ?? d.video_url ?? d.output_url ?? d.url ?? params.videoUrl;
   } catch {
     return params.videoUrl;
   }
@@ -568,7 +977,11 @@ export interface GenerateFromManifestParams {
   onProgress?: (msg: string) => void;
 }
 
-async function runSingleScene(opts: GenerateFromManifestParams, idx: number, prevLastFrame: string | undefined) {
+async function runSingleScene(
+  opts: GenerateFromManifestParams,
+  idx: number,
+  prevLastFrame: string | undefined,
+) {
   const { manifest, modelConfig, quality = "standard", apiKey } = opts;
   const scene = manifest.scenes[idx];
   scene.previous_scene_last_frame = prevLastFrame ?? null;
@@ -588,7 +1001,8 @@ async function runSingleScene(opts: GenerateFromManifestParams, idx: number, pre
   const modelIdImg = resolveModelQuality(modelConfig.id_img, quality);
   const hasNativeAudio = (modelConfig as { has_native_audio?: boolean }).has_native_audio === true;
   const useNative = scene.audio_mode === "native" && hasNativeAudio;
-  const refImage = prevLastFrame ?? manifest.character_ref_url ?? manifest.environment_ref_url ?? undefined;
+  const refImage =
+    prevLastFrame ?? manifest.character_ref_url ?? manifest.environment_ref_url ?? undefined;
 
   try {
     const clip = await generateClip({
@@ -661,27 +1075,9 @@ export async function generateFromManifest(opts: GenerateFromManifestParams): Pr
     prev = await runSingleScene(opts, i, prev);
   }
 
-  // Concat final em ordem.
+  // Merge final em ordem.
   const finals = manifest.scenes.map((s) => s.final_url || s.clip_url).filter(Boolean) as string[];
-  let merged_url: string | null = null;
-  if (finals.length > 1) {
-    opts.onProgress?.("Unindo cenas no vídeo final...");
-    try {
-      const res = await fal.subscribe("fal-ai/ffmpeg-api", {
-        input: {
-          function: "concat_videos",
-          inputs: finals.map((url, i) => ({ type: "video", url, label: `c${i}` })),
-          output_format: "mp4",
-        },
-      });
-      const d = res.data as { video_url?: string; output_url?: string; url?: string };
-      merged_url = d.video_url ?? d.output_url ?? d.url ?? null;
-    } catch {
-      merged_url = null;
-    }
-  } else {
-    merged_url = finals[0] ?? null;
-  }
+  const merged_url = await mergeVideoClips(apiKey, finals, opts.onProgress);
   return { clips: finals, merged_url, manifest };
 }
 
