@@ -608,20 +608,35 @@ function QuickModeControls({
   const chip = (active: boolean) =>
     cn(
       "rounded-md px-2.5 py-1 text-xs transition",
-      active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+      active
+        ? "bg-primary text-primary-foreground"
+        : "text-muted-foreground hover:bg-accent hover:text-foreground",
     );
 
   return (
     <div className="hidden items-center gap-1 rounded-lg border border-border bg-card/50 p-1 lg:flex">
-      <button type="button" onClick={() => patch({ mode: "image", duration: 5 })} className={chip(cfg.mode === "image")}>
+      <button
+        type="button"
+        onClick={() => patch({ mode: "image", duration: 5 })}
+        className={chip(cfg.mode === "image")}
+      >
         Imagem
       </button>
-      <button type="button" onClick={() => patch({ mode: "video" })} className={chip(cfg.mode === "video")}>
+      <button
+        type="button"
+        onClick={() => patch({ mode: "video" })}
+        className={chip(cfg.mode === "video")}
+      >
         Vídeo
       </button>
       {cfg.mode === "video" &&
         ([5, 10] as const).map((d) => (
-          <button key={d} type="button" onClick={() => patch({ duration: d, perScene: d })} className={chip(cfg.duration === d)}>
+          <button
+            key={d}
+            type="button"
+            onClick={() => patch({ duration: d, perScene: d })}
+            className={chip(cfg.duration === d)}
+          >
             {d}s
           </button>
         ))}

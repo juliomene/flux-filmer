@@ -65,7 +65,9 @@ function ChatEmpty() {
 
   const start = useMutation({
     mutationFn: async (text: string) => {
-      const { id } = await create({ data: { mode: cfg.mode, provider: cfg.provider, title: text.slice(0, 60) } });
+      const { id } = await create({
+        data: { mode: cfg.mode, provider: cfg.provider, title: text.slice(0, 60) },
+      });
       await send({
         data: {
           conversationId: id,
@@ -97,9 +99,14 @@ function ChatEmpty() {
       <header className="flex items-center justify-between border-b border-border bg-background/95 px-5 py-3 backdrop-blur">
         <h2 className="flex items-center gap-2 text-sm font-medium">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            {cfg.mode === "video" ? <Film className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+            {cfg.mode === "video" ? (
+              <Film className="h-4 w-4" />
+            ) : (
+              <ImageIcon className="h-4 w-4" />
+            )}
           </span>
-          {cfg.mode === "video" ? "Vídeo" : "Imagem"} · {cfg.provider === "xai" ? "xAI" : cfg.provider}
+          {cfg.mode === "video" ? "Vídeo" : "Imagem"} ·{" "}
+          {cfg.provider === "xai" ? "xAI" : cfg.provider}
         </h2>
         <div className="flex items-center gap-2 rounded-lg border border-border bg-card/50 px-2 py-1">
           <Settings2 className="h-4 w-4 text-muted-foreground" />
@@ -169,25 +176,45 @@ function QuickSettings({
   const chip = (active: boolean) =>
     cn(
       "rounded-md px-2.5 py-1 text-xs transition",
-      active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+      active
+        ? "bg-primary text-primary-foreground"
+        : "text-muted-foreground hover:bg-accent hover:text-foreground",
     );
 
   return (
     <div className="flex flex-wrap items-center gap-1">
-      <button type="button" onClick={() => patch({ mode: "image", duration: 5 })} className={chip(cfg.mode === "image")}>
+      <button
+        type="button"
+        onClick={() => patch({ mode: "image", duration: 5 })}
+        className={chip(cfg.mode === "image")}
+      >
         Imagem
       </button>
-      <button type="button" onClick={() => patch({ mode: "video" })} className={chip(cfg.mode === "video")}>
+      <button
+        type="button"
+        onClick={() => patch({ mode: "video" })}
+        className={chip(cfg.mode === "video")}
+      >
         Vídeo
       </button>
       {(["kling", "xai", "sora", "veo3"] as Provider[]).map((p) => (
-        <button key={p} type="button" onClick={() => patch({ provider: p })} className={chip(cfg.provider === p)}>
+        <button
+          key={p}
+          type="button"
+          onClick={() => patch({ provider: p })}
+          className={chip(cfg.provider === p)}
+        >
           {p === "xai" ? "xAI" : p === "veo3" ? "Veo3" : p[0].toUpperCase() + p.slice(1)}
         </button>
       ))}
       {cfg.mode === "video" &&
         ([5, 10] as const).map((d) => (
-          <button key={d} type="button" onClick={() => patch({ duration: d, perScene: d })} className={chip(cfg.duration === d)}>
+          <button
+            key={d}
+            type="button"
+            onClick={() => patch({ duration: d, perScene: d })}
+            className={chip(cfg.duration === d)}
+          >
             {d}s
           </button>
         ))}
