@@ -374,20 +374,23 @@ function ConfigPanel({
   return (
     <div
       ref={ref}
-      className="absolute bottom-full left-1/2 z-30 mb-2 max-h-[70vh] w-[min(640px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-2xl"
+      className="absolute bottom-full left-1/2 z-30 mb-3 max-h-[70vh] w-[min(680px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-2xl"
     >
-      <div className="mb-3 flex items-center justify-between border-b border-border pb-2">
-        <h3 className="text-sm font-medium">Configurações</h3>
+      <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+        <div>
+          <h3 className="text-sm font-semibold">Configurações</h3>
+          <p className="text-xs text-muted-foreground">Ajuste geração, proporção e opções do vídeo.</p>
+        </div>
         <button
           type="button"
           onClick={onClose}
-          className="text-muted-foreground hover:text-foreground"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
-      <div className="space-y-4">
-        <div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border border-border bg-card/40 p-3">
           <Label className="text-xs">Modo</Label>
           <div className="mt-1 flex gap-2">
             <Chip active={cfg.mode === "image"} onClick={() => patch({ mode: "image" })}>
@@ -399,7 +402,7 @@ function ConfigPanel({
           </div>
         </div>
 
-        <div>
+        <div className="rounded-lg border border-border bg-card/40 p-3">
           <Label className="text-xs">Provedor</Label>
           <div className="mt-1 flex flex-wrap gap-2">
             {(["xai", "kling", "sora", "veo3"] as Provider[]).map((p) => (
@@ -410,7 +413,7 @@ function ConfigPanel({
           </div>
         </div>
 
-        <div>
+        <div className="rounded-lg border border-border bg-card/40 p-3 sm:col-span-2">
           <Label className="text-xs">API Key (fal.ai)</Label>
           <Input
             value={cfg.apiKey}
@@ -426,7 +429,7 @@ function ConfigPanel({
 
         {cfg.mode === "video" && (
           <>
-            <div>
+            <div className="rounded-lg border border-border bg-card/40 p-3">
               <Label className="text-xs">Duração</Label>
               <div className="mt-1 flex flex-wrap gap-2">
                 {[5, 10].map((d) => (
@@ -447,7 +450,7 @@ function ConfigPanel({
                 .
               </p>
             </div>
-            <div>
+            <div className="rounded-lg border border-border bg-card/40 p-3">
               <Label className="text-xs">Proporção</Label>
               <div className="mt-1 flex gap-2">
                 {(["16:9", "9:16", "1:1"] as const).map((a) => (
@@ -457,7 +460,7 @@ function ConfigPanel({
                 ))}
               </div>
             </div>
-            <div>
+            <div className="rounded-lg border border-border bg-card/40 p-3">
               <Label className="text-xs">Áudio</Label>
               <div className="mt-1 flex flex-wrap gap-2">
                 {([
@@ -475,7 +478,7 @@ function ConfigPanel({
                 <p className="mt-1 text-[10px] text-amber-500">⚠️ Kling não gera fala sincronizada. Use xAI ou Veo3.</p>
               )}
             </div>
-            <div>
+            <div className="rounded-lg border border-border bg-card/40 p-3">
               <Label className="text-xs">Idioma</Label>
               <Select value={cfg.language} onValueChange={(v) => patch({ language: v })}>
                 <SelectTrigger className="mt-1 h-8">
@@ -493,7 +496,7 @@ function ConfigPanel({
           </>
         )}
 
-        <div className="space-y-3 border-t border-border pt-3">
+        <div className="space-y-3 rounded-lg border border-border bg-card/40 p-3 sm:col-span-2">
           <div className="flex items-center justify-between">
             <Label className="text-xs">Overlay de texto</Label>
             <Switch
