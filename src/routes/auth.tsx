@@ -35,17 +35,24 @@ function AuthPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) return toast.error(error.message);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setLoading(false);
+      return toast.error(error.message);
+    }
+    if (!data.session) {
+      setLoading(false);
+      return toast.error("Não foi possível iniciar a sessão. Tente novamente.");
+    }
     toast.success("Bem-vindo de volta!");
-    navigate({ to: "/chat" });
+    // Hard redirect garante que o beforeLoad de _authenticated leia a sessão já persistida
+    window.location.href = "/chat";
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -53,10 +60,16 @@ function AuthPage() {
         data: { display_name: displayName },
       },
     });
-    setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      setLoading(false);
+      return toast.error(error.message);
+    }
     toast.success("Conta criada! Verifique seu e-mail se a confirmação estiver ativada.");
-    navigate({ to: "/chat" });
+    if (data.session) {
+      window.location.href = "/chat";
+    } else {
+      setLoading(false);
+    }
   };
 
   return (
