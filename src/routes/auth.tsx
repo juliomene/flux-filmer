@@ -21,21 +21,25 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      if (data.session) {
-        navigate({ to: "/chat", replace: true });
-      } else {
-        setLoading(false);
+    const checkSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (!mounted) return;
+        if (!error && data.user) {
+          navigate({ to: "/chat", replace: true });
+        }
+      } finally {
+        if (mounted) setLoading(false);
       }
-    });
+    };
+    void checkSession();
     return () => {
       mounted = false;
     };
