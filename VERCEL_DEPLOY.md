@@ -27,14 +27,14 @@ Este projeto roda em duas plataformas em paralelo:
 ## Como funciona
 
 `vite.config.vercel.ts` desabilita o plugin Cloudflare do preset Lovable e
-usa o target `vercel` do TanStack Start, que gera funções serverless Node
-compatíveis com a Vercel. Todo o código de aplicação (rotas, server
-functions, Supabase, fal.ai) é reutilizado sem alterações.
+usa Nitro, o adaptador oficial do TanStack Start para a Vercel. Todo o código
+de aplicação (rotas, server functions, Supabase, fal.ai) é reutilizado sem
+alterações.
 
 ## Testar localmente
 
 ```bash
 bun run build:vercel
-# saída em .output/ pronta para a Vercel CLI:
+# saída em .vercel/output/ pronta para a Vercel CLI:
 npx vercel deploy --prebuilt
 ```
