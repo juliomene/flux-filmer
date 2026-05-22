@@ -6,13 +6,10 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-// Full Vercel build — Cloudflare plugin disabled and TanStack Start emits a
-// Node/Vercel-compatible server bundle. The Lovable preview (Cloudflare Workers)
-// will not run with this config; deploy on Vercel via `bun run build`.
+// Lovable preview / default build config. Keep Cloudflare enabled here so the
+// preview keeps working. Vercel uses vite.config.vercel.ts via `build:vercel`.
 export default defineConfig({
-  cloudflare: false,
   tanstackStart: {
-    target: "vercel",
     server: { entry: "server" },
   },
 });
